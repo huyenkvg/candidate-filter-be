@@ -25,9 +25,6 @@ export class WishListController {
   @Post('upfile')
   @UseInterceptors(FileInterceptor('file'))
   uploadFile(@UploadedFile() file: Express.Multer.File) {
-    const workbook = XLSX.read(file.buffer, { type: 'buffer' });
-    const wishList = XLSX.utils.sheet_to_json(workbook.Sheets['Mini']).map((row) => FileUtils.wishListToObject(row));
-    console.log('wl =>>', wishList);
-    return this.wishListService.receiveFile();
+    return this.wishListService.receiveFile(file);
   }
 }
