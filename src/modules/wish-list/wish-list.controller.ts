@@ -27,4 +27,12 @@ export class WishListController {
   uploadFile(@UploadedFile() file: Express.Multer.File) {
     return this.wishListService.receiveFile(file);
   }
+
+  @Post('filter')
+  @UseInterceptors(FileInterceptor('file'))
+  filter(@UploadedFile() file: Express.Multer.File, @Body() body: any) {
+    // console.log('file', file);
+    // console.log('data :>> ', JSON.parse(body.data));
+    return this.wishListService.receiveAndFilter(file, JSON.parse(body.data));
+  }
 }

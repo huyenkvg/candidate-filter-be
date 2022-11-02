@@ -22,16 +22,16 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @Get()
   findAll() {
     return this.usersService.findAll();
   }
 
-  // @Get(':username')
-  // findOne(@Param('username') username: string) {
-  //   return this.usersService.findUser(username);
-  // }
+  @Get(':username')
+  findOne(@Param('username') username: string) {
+    return this.usersService.findUser(username);
+  }
 
   @Patch(':id')
   update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {

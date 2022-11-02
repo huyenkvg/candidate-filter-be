@@ -1,5 +1,5 @@
 export default class FileUtils {
-  static wishListToObject(row) {
+  static wishRowToObject(row) {
     const object_keys = this.getWishListHeader(row);
     let row_obj = Object.keys(row);
     return row_obj.reduce((obj, key, index) => {
@@ -28,6 +28,8 @@ export default class FileUtils {
       )
       .join('');
   }
+
+  
 
   static removeVietnameseTones(str) {
     str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, 'a');

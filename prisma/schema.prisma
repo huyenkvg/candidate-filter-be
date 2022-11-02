@@ -7,28 +7,86 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model chi_tieu_tuyen_sinh {
+  maNganh         String          @db.NVarChar(30)
+  maKhoa          Int
+  chiTieu         Int?
+  khoa_tuyen_sinh khoa_tuyen_sinh @relation(fields: [maKhoa], references: [maKhoa], onUpdate: NoAction, map: "FK_chi_tieu_tuyen_sinh_khoa_tuyen_sinh")
+  nganh           nganh           @relation(fields: [maNganh], references: [maNganh], onUpdate: NoAction, map: "FK_chi_tieu_tuyen_sinh_nganh")
+
+  @@id([maNganh, maKhoa], map: "PK_chi_tieu_tuyen_sinh")
+}
+
+model danh_sach_trung_tuyen {
+  soBaoDanh       String          @db.NVarChar(30)
+  maKhoa          Int
+  dotTuyenSinh    Int
+  maNganh         String          @db.NVarChar(30)
+  hoTen           String?         @db.NVarChar(50)
+  diemTrungTuyen  Float?
+  dot_tuyen_sinh  dot_tuyen_sinh  @relation(fields: [dotTuyenSinh], references: [dotTuyenSinh], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_dot_tuyen_sinh")
+  khoa_tuyen_sinh khoa_tuyen_sinh @relation(fields: [maKhoa], references: [maKhoa], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_khoa_tuyen_sinh")
+  nganh           nganh           @relation(fields: [maNganh], references: [maNganh], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_nganh")
+
+  @@id([soBaoDanh, maKhoa], map: "PK_danh_sach_trung_tuyen_1")
+}
+
+model dot_tuyen_sinh {
+  maKhoa                Int?
+  tenDotTuyenSinh       String?                 @db.NVarChar(100)
+  dotTuyenSinh          Int                     @id(map: "PK_dot_tuyen_sinh") @default(autoincrement())
+  khoa_tuyen_sinh       khoa_tuyen_sinh?        @relation(fields: [maKhoa], references: [maKhoa], onDelete: NoAction, onUpdate: NoAction, map: "FK_dot_tuyen_sinh_khoa_tuyen_sinh")
+  danh_sach_trung_tuyen danh_sach_trung_tuyen[]
+
+  @@unique([maKhoa, dotTuyenSinh], map: "IX_dot_tuyen_sinh")
+}
+
+model khoa_tuyen_sinh {
+  maKhoa                Int                     @id(map: "PK_AcademicYear") @default(autoincrement())
+  tenKhoa               String                  @db.NVarChar(50)
+  chi_tieu_tuyen_sinh   chi_tieu_tuyen_sinh[]
+  danh_sach_trung_tuyen danh_sach_trung_tuyen[]
+  dot_tuyen_sinh        dot_tuyen_sinh[]
+}
+
+model nganh {
+  maNganh               String                  @id(map: "PK_nganh") @db.NVarChar(30)
+  tenNganh              String?                 @db.NChar(100)
+  chi_tieu_tuyen_sinh   chi_tieu_tuyen_sinh[]
+  danh_sach_trung_tuyen danh_sach_trung_tuyen[]
+}
+
+model profile {
+  user_id   Int     @id(map: "PK_profile")
+  firstname String? @db.NVarChar(20)
+  lastname  String? @db.NVarChar(20)
+  phone     String? @db.NChar(15)
+  active    Boolean @default(true, map: "DF_profile_active")
+  users     users   @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "FK_profile_user")
+}
+
 model role {
   id    Int     @id(map: "PK_role") @default(autoincrement())
   name  String? @db.NVarChar(30)
   users users[]
 }
 
-model users {
-  id             Int      @id(map: "PK_user") @default(autoincrement())
-  username       String   @unique(map: "UX_user") @db.NVarChar(50)
-  password       String   @db.NVarChar(200)
-  role_id        Int
-  active         Boolean  @default(true, map: "DF_users_active")
-  role           role     @relation(fields: [role_id], references: [id], onUpdate: NoAction, map: "FK_user_role")
-  profile           profile ?
+model sysdiagrams {
+  name         String @db.NVarChar(128)
+  principal_id Int
+  diagram_id   Int    @id(map: "PK__sysdiagr__C2B05B619A2C579C") @default(autoincrement())
+  version      Int?
+  definition   Bytes?
+
+  @@unique([principal_id, name], map: "UK_principal_name")
 }
 
-model profile {
-  user_id                                       Int              @id(map: "PK_profile")
-  firstname                                     String?          @db.NVarChar(20)
-  lastname                                      String?          @db.NVarChar(20)
-  phone                                         String?          @db.NChar(15)
-  active                                        Boolean          @default(true, map: "DF_profile_active")
-   users                                         users            @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "FK_profile_user")
-
+model users {
+  id       Int      @id(map: "PK_user") @default(autoincrement())
+  username String   @unique(map: "UX_user") @db.NVarChar(50)
+  password String   @db.NVarChar(200)
+  role_id  Int
+  active   Boolean  @default(true, map: "DF_users_active")
+  role     role     @relation(fields: [role_id], references: [id], onUpdate: NoAction, map: "FK_user_role")
+  profile  profile?
 }
