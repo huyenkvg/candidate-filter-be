@@ -12,6 +12,7 @@ export class AuthService {
   ) {}
 
   async validateUser(username, pass) {
+    console.log('username :>> ', username);
     const user = await this.usersService.findUserByCredentials(username, pass);
     return user;
   }
@@ -22,6 +23,7 @@ export class AuthService {
       username: user.username,
       sub: user.id,
       roleId: user.role_id,
+      profile: user.profile
     };
     return {
       access_token: this.jwtService.sign(payload),

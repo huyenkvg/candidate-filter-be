@@ -52,8 +52,10 @@ export class UsersService {
         password: true,
         role_id: true,
         active: true,
+        profile: true,
       },
     });
+    // return u;
     return (await comparePassword(password, u.password)) ? u : null;
   }
 
@@ -68,10 +70,11 @@ export class UsersService {
     return await this.prisma.users.findMany();
   }
 
+
   async findUser(username: string) {
     return await this.prisma.users.findUnique({
       where: {
-        username,
+        username
       },
       include: {
         profile: true,

@@ -8,10 +8,12 @@ import {
   Delete,
   UploadedFile,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { WishListService } from './wish-list.service';
 import { CreateWishListDto } from './dto/create-wish-list.dto';
 import { UpdateWishListDto } from './dto/update-wish-list.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { extname } from 'path';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -28,6 +30,8 @@ export class WishListController {
     return this.wishListService.receiveFile(file);
   }
 
+ 
+  // @UseGuards(JwtAuthGuard)
   @Post('filter')
   @UseInterceptors(FileInterceptor('file'))
   filter(@UploadedFile() file: Express.Multer.File, @Body() body: any) {

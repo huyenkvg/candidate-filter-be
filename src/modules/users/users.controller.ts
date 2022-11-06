@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   UseGuards,
+  Request,
   Delete,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -17,9 +18,31 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  async create(@Body() createUserDto: CreateUserDto) {
+    try {
+      const user = await this.usersService.create(createUserDto);
+      return user;
+    }
+    catch (error) {
+      console.log('error :>> ', error);
+      switch (error.code) {
+        case 'P2002':
+          return {
+            message: 'Username already exists',
+          };
+        case 'P2003':
+          return {
+            message: 'This role does not exist',
+          };
+        default:
+          return {
+            message: 'Something went wrong, retry later',
+          };
+      }
+    }
   }
 
   // @UseGuards(JwtAuthGuard)
@@ -41,5 +64,12 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id') id: number) {
     return this.usersService.remove(+id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('/profile')
+  async profile(@Request() req) {
+    console.log('profile req.user :>> ', req.user)
+    return this.usersService.findUser(req.user.username);
   }
 }

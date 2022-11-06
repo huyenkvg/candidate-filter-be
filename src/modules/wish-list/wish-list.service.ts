@@ -11,7 +11,8 @@ export class WishListService {
     return 'This action adds a new wishList';
   }
 
-  groupBy(wishList, headerName) {
+  groupBy(original_wishList, headerName) {
+    const wishList = original_wishList.sort((a, b) => a['nguyenVong'] - b['nguyenVong']);
     // gom danh sách Nguyện Vọng nhóm theo headerName tuỳ ý, ở đây dùng là sốBáoDanh đối với thí sinh, mãNgành đối với ngành
     const groupedWishList = wishList.reduce((acc, item) => {
       const key = item[headerName];
@@ -34,10 +35,20 @@ export class WishListService {
     }
     return false;
   }
-  compareByDieuKien(a, b, ds_dieukien, mota_dieukien) {
+  compareByDieuKien(a_arr, b_arr, ds_dieukien, mota_dieukien) {
+    // a and b is a wish array
+    let a = a_arr[0];
+    let b = b_arr[0];
+    // truong hop trung so bao danh
+    if (a['soBaoDanh'] == b['soBaoDanh']) {
+      return -(a['nguyenVong'] - b['nguyenVong']);
+    }
+
+
+    // truong hop comindedKey khac nhau hoan toan
     let result = 0;
     for (let i = 0; i < ds_dieukien.length; i++) {
-      let opposite = mota_dieukien[ds_dieukien[i]] === 'asc' ? 1 : -1; 
+      let opposite = mota_dieukien[ds_dieukien[i]] == 'ASC' ? 1 : -1; 
       if (a[ds_dieukien[i]] > b[ds_dieukien[i]]) {
         result = 1*opposite;
         break;
@@ -48,6 +59,21 @@ export class WishListService {
     }
     return result;
   }
+
+  // Hàm này dùng để xử lý nguyện vọng của thí sinh
+  // wishListOfAll là danh sách nguyện vọng của tất cả thí sinh được gom nhóm theo combinedKey ( = `soBaoDanh@maNganh`)
+  // kiểu như này: { '123@123':
+  //                   [{ soBaoDanh: '123', maNganh: '123', nguyenVong: 1, tongDiem: 10, khoi: A01 }, { soBaoDanh: '123', maNganh: '123', nguyenVong: 2, tongDiem: 9, khoi: A02 } ],
+  //          '123@124':
+  //                    [{ soBaoDanh: '123', maNganh: '124', nguyenVong: 1, tongDiem: 10, khoi: A01 }],
+  //          '124@123':
+  //                   [{ soBaoDanh: '124', maNganh: '123', nguyenVong: 1, tongDiem: 9, khoi: A01 }, { soBaoDanh: '124', maNganh: '123', nguyenVong: 2, tongDiem: 10, khoi: A02 } ],
+  //          }
+  // Thay vì gom theo số báo danh, cần phải gom theo combinedKey bởi vì có thể có trường hợp thí sinh đăng ký 2 ngành nhưng khác khối,
+  //  dẫn đến khác tổng điểm, thành ra sẽ có 2 nguyện vọng khác tổng điểm ngưng lại nằm cùng rank sau khi sort
+  // Trong khi hàm này sẽ
+  // hàm naỳ sẽ tiến hành lấy danh sách trên, sắp sếp lại nguyện vọng của thí sinh theo điều kiện ưu tiên được gửi kèm
+  // Đề xuất dùng Tổng điểm  và thứ tự Nguyện vọng
   huyenKute(wishListOfAll: Object, chiTieuNganh: Object, ds_dieukien: Object, mota_dieukien: Object) {
     const dsTrungTuyen = {};
     const dsTrungTuyenTamThoi = {};
@@ -56,7 +82,8 @@ export class WishListService {
       dsTrungTuyenTamThoi[key] = [];
     });
     // Sau Khi reduce ở hàm groupBy(...) thì đây vẫn đang là list của list ~ mảng 2 chiều, flat() để làm phẳng mảng
-    const listWishValues = Object.values(wishListOfAll).flat().map(({ soBaoDanh, tongDiem }) => ({ soBaoDanh, tongDiem }));
+    // const listWishValues = Object.values(wishListOfAll).flat()//.map(({ soBaoDanh, tongDiem}) => ({ soBaoDanh, tongDiem }));
+    const listWishValues = Object.values(wishListOfAll)//.map((item) => {return item.sort((a, b) => this.compareByDieuKien([a], [b], ds_dieukien, mota_dieukien))});
     // Sắp xếp theo [điều kiện] giảm dần, ở đây điều kiện mặc định là tổng điểm, sau khi cơ cấu điều kiện ưu tiên thì sẽ sort theo điều kiện ưu tiên 
     // Ví dụ như 2 đứa bằng điểm thì sẽ xét điều kiện ưu tiên tiếp theo, có thể là thứ tự nguyện vọng chẳng hạn.
     // gửi cấu hình điều kiện ưu tiên thì gửi kèm theo 1 object có cấu trúc như sau:
@@ -65,13 +92,17 @@ export class WishListService {
     //   "nguyenVong": "asc"
     // } 
     // let sortedCandidates = listWishValues.sort(function compare(a: any, b: any) { return 1.0 * (b.tongDiem - a.tongDiem) });
-    let sortedCandidates = listWishValues.sort((a, b) => this.compareByDieuKien(a, b, ds_dieukien, mota_dieukien));
+    let sortedCandidates = listWishValues.sort((aArray, bArray) => this.compareByDieuKien(aArray, bArray, ds_dieukien, mota_dieukien));
     let time = 0;
-    while (sortedCandidates.length > 0 && this.checkChiTieu(chiTieuNganh)) {
-      time++;
+    // return wishListOfAll;
+    // return sortedCandidates;
+    // while (sortedCandidates.length > 0 && this.checkChiTieu(chiTieuNganh)) {
+      // time++;
       for (let i = 0; i < sortedCandidates.length; i++) {
-        let candidate = sortedCandidates[i];
-        let candidateWishList = wishListOfAll[candidate.soBaoDanh];
+        let candidateWishList = sortedCandidates[i];
+
+
+        // let candidateWishList = wishListOfAll[candidate.combinedKey];
         let candidatePriorityWish = null;
         // xét xem còn slot k, bỏ các nguyện vọng đã hết slot
         while (candidateWishList.length > 0) {
@@ -82,15 +113,14 @@ export class WishListService {
             break;
           }
           // hết slot
-          // wishListOfAll[candidate.soBaoDanh] = candidateWishList; // bỏ 
+          // wishListOfAll[candidate.soBaoDanh] = candidateWishList; // bỏ
         }
         // còn nguyện vọng ko?
-
-        sortedCandidates = sortedCandidates.filter((element) => element.soBaoDanh != candidate.soBaoDanh);
+        // sortedCandidates = sortedCandidates.filter((item, i) => item.length > 0);
         if (candidatePriorityWish == null) {  // tạch hết rồi, cút
           continue;
         }
-        dsTrungTuyenTamThoi[candidatePriorityWish.maNganh].push(candidate); // lấy người này vào ngành này
+        dsTrungTuyenTamThoi[candidatePriorityWish.maNganh].push(candidatePriorityWish); // lấy người này vào ngành này
       }
       // let breakNow = true;
       // for (let key in dsTrungTuyenTamThoi) {
@@ -103,11 +133,11 @@ export class WishListService {
       //     sortedCandidates.filter((element) => element.soBaoDanh != candidate.soBaoDanh);
       //   }
       // }
-      console.log('sortedCandidates.length :>> ', sortedCandidates.length);
+      // console.log('sortedCandidates.length :>> ', sortedCandidates.length);
       // if (breakNow) {
       //   break;
       // }
-    }
+    // }
 
     // console.log('dsTrungTuyen :>> ', dsTrungTuyen);
     return dsTrungTuyenTamThoi;
@@ -133,13 +163,14 @@ export class WishListService {
         return { error: 'Không đúng định dạng file, Hãy xem lại các trường dữ liệu bắt buộc có hoặc sử dụng template' };
       }
       let groupByMaNganh = this.groupBy(wishList, 'maNganh');
-      let groupBySoBaoDanh = this.groupBy(wishList, 'soBaoDanh');
+      // let groupBySoBaoDanh = this.groupBy(wishList, 'soBaoDanh');      
+      let groupByCombinedKey = this.groupBy(wishList, 'combinedKey');
 
       return {
         wishList: wishList,
         headerObject,
         groupByMaNganh,
-        groupBySoBaoDanh,
+        groupBySoBaoDanh: groupByCombinedKey,
         chiTieuNganh: chiTieuNganh,
         // dstt: this.huyenKute(groupBySoBaoDanh, chiTieuNganh)
       };
@@ -150,6 +181,10 @@ export class WishListService {
       };
     }
   }
+
+
+
+  // THIS PROJECT'S CORE FUNCTION
   receiveAndFilter(file, props) {
     const { ds_dieukien, mota_dieukien, chiTieuNganh } = props;
     if (!file) {
@@ -159,9 +194,7 @@ export class WishListService {
       const workbook = XLSX.read(file.buffer, { type: 'buffer' });
       if (!XLSX.utils.sheet_to_json(workbook.Sheets['Mini']))
         return { error: 'NOOOOOOOOOOOOOOOOOOO' };
-      const wishList = XLSX.utils
-        .sheet_to_json(workbook.Sheets['Mini'])
-        .map((row) => FileUtils.wishRowToObject(row));
+      const wishList = XLSX.utils.sheet_to_json(workbook.Sheets['Mini']).map((row) => FileUtils.wishRowToObject(row));
       const headerObject = FileUtils.getWishListHeaderObject(
         XLSX.utils.sheet_to_json(workbook.Sheets['Mini'])[0],
       );
@@ -169,9 +202,10 @@ export class WishListService {
         return { error: 'NOOOOOOOOO ' };
       }
       let groupBySoBaoDanh = this.groupBy(wishList, 'soBaoDanh');
+      let groupByCombinedKey = this.groupBy(wishList, 'combinedKey');
 
       return {
-        dstt: this.huyenKute(groupBySoBaoDanh, chiTieuNganh, ds_dieukien, mota_dieukien)
+        dstt: this.huyenKute(groupByCombinedKey, chiTieuNganh, ds_dieukien, mota_dieukien)
       };
     } catch (e) {
       console.log('e :>> ', e);

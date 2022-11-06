@@ -1,11 +1,15 @@
 export default class FileUtils {
+
+  // mỗi dòng gửi vào là một object, 
   static wishRowToObject(row) {
-    const object_keys = this.getWishListHeader(row);
+    const object_keys = this.getWishListHeader(row);    
     let row_obj = Object.keys(row);
-    return row_obj.reduce((obj, key, index) => {
-      obj[object_keys[index]] = row[key];
+    let res = row_obj.reduce((obj, key, index) => {
+      obj[object_keys[index]] = row[key];      
       return obj;
-    }, {});;
+    }, {});
+    res['combinedKey'] = res['soBaoDanh'] +'@'+ res['maNganh'];
+    return res;
   }
 
   static getWishListHeader(row) {
