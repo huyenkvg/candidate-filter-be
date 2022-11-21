@@ -1,29 +1,33 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { KhoaTuyenSinhService } from './khoa-tuyen-sinh.service';
 import { CreateKhoaTuyenSinhDto } from './dto/create-khoa-tuyen-sinh.dto';
 import { UpdateKhoaTuyenSinhDto } from './dto/update-khoa-tuyen-sinh.dto';
 
-@Controller('khoa-tuyen-sinh')
+@Controller('khoa-tuyen-sinh/')
 export class KhoaTuyenSinhController {
   constructor(private readonly khoaTuyenSinhService: KhoaTuyenSinhService) {}
+  // @Get()
+  // findAll() {
+  //   return this.khoaTuyenSinhService.findAll();
+  // }
   @Get()
-  findAll() {
-
-    return this.khoaTuyenSinhService.findAll();
+  findAllOps(@Query() query) {
+    console.log('body :>> ', query);
+    return this.khoaTuyenSinhService.findAll(query);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.khoaTuyenSinhService.findOne(+id);
+    return this.khoaTuyenSinhService.findOne(Number.parseInt(id));
   }
-  @Get('tim-kiem/:str')
+  @Get('/tim-kiem/:str')
   timKiem(@Param('str') str: string) {
     return this.khoaTuyenSinhService.search(str);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateKhoaTuyenSinhDto: UpdateKhoaTuyenSinhDto) {
-    return this.khoaTuyenSinhService.update(+id, updateKhoaTuyenSinhDto);
+  @Patch()
+  update(@Body() updateKhoaTuyenSinhDto: UpdateKhoaTuyenSinhDto) {
+    return this.khoaTuyenSinhService.update( updateKhoaTuyenSinhDto);
   }
 
   @Post()
@@ -32,6 +36,6 @@ export class KhoaTuyenSinhController {
   }
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.khoaTuyenSinhService.remove(+id);
+    return this.khoaTuyenSinhService.remove(Number.parseInt(id));
   }
 }

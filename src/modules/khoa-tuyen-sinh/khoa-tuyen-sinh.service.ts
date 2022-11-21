@@ -8,7 +8,7 @@ export class KhoaTuyenSinhService {
   prisma = new PrismaClient();
   async create(createKhoaTuyenSinhDto: CreateKhoaTuyenSinhDto) {
     return  {
-      danh_sach_dot_tuyen: 0,
+      danh_sach_dot_tuyen: [],
       count_dot_tuyen_sinh: 0,
       count_trung_tuyen: 0,      
       ...await this.prisma.khoa_tuyen_sinh.create({
@@ -19,7 +19,15 @@ export class KhoaTuyenSinhService {
     };
   }
 
-  async findAll() {
+  async findAll(params: any) {
+    if (params.nameOnly) {
+      return this.prisma.khoa_tuyen_sinh.findMany({
+        select: {
+          maKhoa: true,
+          tenKhoa: true,
+        },
+      });
+    }
     let result = Promise.all((await this.prisma.khoa_tuyen_sinh.findMany()).map(
       async (item) => {
         return {
@@ -27,17 +35,20 @@ export class KhoaTuyenSinhService {
           ...item,
           danh_sach_dot_tuyen: await this.prisma.dot_tuyen_sinh.findMany({
             where: {
-              maKhoa: item.maKhoa,
+              maKhoaTuyenSinh: item.maKhoa,
             },
+            include: {
+              danh_sach_trung_tuyen: true,
+            }
           }),
           count_dot_tuyen_sinh: await this.prisma.dot_tuyen_sinh.count({
             where: {
-              maKhoa: item.maKhoa,
+              maKhoaTuyenSinh: item.maKhoa,
             },
           }),
           count_trung_tuyen: await this.prisma.danh_sach_trung_tuyen.count({
             where: {
-              maKhoa: item.maKhoa,
+              maKhoaTuyenSinh: item.maKhoa,
             },
           }),
         };
@@ -64,26 +75,19 @@ export class KhoaTuyenSinhService {
     });
   }
 
-  update(id: number, updateKhoaTuyenSinhDto: UpdateKhoaTuyenSinhDto) {
-    try {
-      this.prisma.khoa_tuyen_sinh.update({
+  update(updateKhoaTuyenSinhDto: UpdateKhoaTuyenSinhDto) {
+    // console.log('updateKhoaTuyenSinhDto :>> ', updateKhoaTuyenSinhDto);
+    const { maKhoa, ...data } = updateKhoaTuyenSinhDto;
+    return this.prisma.khoa_tuyen_sinh.update({
         where: {
-          maKhoa: id,
+        maKhoa: maKhoa,
         },
         data: {
-          tenKhoa: updateKhoaTuyenSinhDto.tenKhoa,
+          tenKhoa: data.tenKhoa,
         },
-      });
-    } catch (error) {
-      return {
-        message: 'Update failed',
-      }
-
-    }
-    return {
-      message: 'Update successfully',
-    };
-
+    }).then((data) => {
+      return data;
+    })
   }
 
   remove(id: number) {

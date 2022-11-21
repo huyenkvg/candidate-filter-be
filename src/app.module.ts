@@ -10,9 +10,13 @@ import { KhoaTuyenSinhModule } from './modules/khoa-tuyen-sinh/khoa-tuyen-sinh.m
 import { DotTuyenSinhModule } from './modules/dot-tuyen-sinh/dot-tuyen-sinh.module';
 import { DanhSachTrungTuyenModule } from './modules/danh-sach-trung-tuyen/danh-sach-trung-tuyen.module';
 import { ChiTieuTuyenSinhModule } from './modules/chi-tieu-tuyen-sinh/chi-tieu-tuyen-sinh.module';
+import { ToHopModule } from './modules/to-hop/to-hop.module';
+import { ChiTieuToHopModule } from './modules/chi-tieu-to-hop/chi-tieu-to-hop.module';
+import { DanhSachXetTuyenModule } from './modules/danh-sach-xet-tuyen/danh-sach-xet-tuyen.module';
+import { ThongTinCaNhanModule } from './modules/thong-tin-ca-nhan/thong-tin-ca-nhan.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, WishListModule, NganhModule, KhoaTuyenSinhModule, DotTuyenSinhModule, DanhSachTrungTuyenModule, ChiTieuTuyenSinhModule],
+  imports: [AuthModule, UsersModule, WishListModule, NganhModule, KhoaTuyenSinhModule, DotTuyenSinhModule, DanhSachTrungTuyenModule, ChiTieuTuyenSinhModule, ToHopModule, ChiTieuToHopModule, DanhSachXetTuyenModule, ThongTinCaNhanModule],
   controllers: [AppController],
   providers: [AppService],
 })

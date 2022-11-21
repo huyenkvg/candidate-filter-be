@@ -19,16 +19,16 @@ export class NganhController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.nganhService.findOne(+id);
+    return this.nganhService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateNganhDto: UpdateNganhDto) {
-    return this.nganhService.update(+id, updateNganhDto);
+    return this.nganhService.update(id, updateNganhDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.nganhService.remove(+id);
+    return this.nganhService.remove(id);
   }
 }

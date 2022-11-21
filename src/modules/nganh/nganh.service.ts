@@ -1,26 +1,43 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import { CreateNganhDto } from './dto/create-nganh.dto';
 import { UpdateNganhDto } from './dto/update-nganh.dto';
 
 @Injectable()
 export class NganhService {
+  prisma = new PrismaClient();
   create(createNganhDto: CreateNganhDto) {
-    return 'This action adds a new nganh';
+    return this.prisma.nganh.create({
+      data: createNganhDto,
+    });
   }
 
   findAll() {
-    return `This action returns all nganh`;
+    return this.prisma.nganh.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} nganh`;
+  findOne(id: string) {
+    return this.prisma.nganh.findUnique({
+      where: {
+        maNganh: id,
+      },
+    });
   }
 
-  update(id: number, updateNganhDto: UpdateNganhDto) {
-    return `This action updates a #${id} nganh`;
+  update(id: string, updateNganhDto: UpdateNganhDto) {
+    return this.prisma.nganh.update({
+      where: {
+        maNganh: id,
+      },
+      data: updateNganhDto,
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} nganh`;
+  remove(id: string) {
+    return this.prisma.nganh.delete({
+      where: {
+        maNganh: id,
+      },
+    });
   }
 }

@@ -1,1 +1,5 @@
-export class CreateChiTieuTuyenSinhDto {}
+export class CreateChiTieuTuyenSinhDto {
+  maNganh: string;
+  maDotTuyenSinh : number;
+  chiTieu : number;
+}

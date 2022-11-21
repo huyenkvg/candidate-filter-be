@@ -76,9 +76,10 @@ export class WishListService {
   // Đề xuất dùng Tổng điểm  và thứ tự Nguyện vọng
   huyenKute(wishListOfAll: Object, chiTieuNganh: Object, ds_dieukien: Object, mota_dieukien: Object) {
     const dsTrungTuyen = {};
+    const dsNVTrungTuyen = {};
     const dsTrungTuyenTamThoi = {};
     Object.keys(chiTieuNganh).forEach((key) => {
-      dsTrungTuyen[key] = [];
+      // dsTrungTuyen[key] = [];
       dsTrungTuyenTamThoi[key] = [];
     });
     // Sau Khi reduce ở hàm groupBy(...) thì đây vẫn đang là list của list ~ mảng 2 chiều, flat() để làm phẳng mảng
@@ -99,16 +100,18 @@ export class WishListService {
     // while (sortedCandidates.length > 0 && this.checkChiTieu(chiTieuNganh)) {
       // time++;
       for (let i = 0; i < sortedCandidates.length; i++) {
+
         let candidateWishList = sortedCandidates[i];
-
-
         // let candidateWishList = wishListOfAll[candidate.combinedKey];
         let candidatePriorityWish = null;
         // xét xem còn slot k, bỏ các nguyện vọng đã hết slot
+        // note : dsach này đã sỏt theo NV rồi, nên chỉ cần có NV đầu tiên đậu là đc
         while (candidateWishList.length > 0) {
           let wish = candidateWishList.shift(); // lấy wish đầu hàng
-          // check nếu còn slot ngành này
-          if (dsTrungTuyen[wish.maNganh] && chiTieuNganh[wish.maNganh] > dsTrungTuyenTamThoi[wish.maNganh].length) { // còn slot
+          // if(dsTrungTuyen[wish.soBaoDanh] == "IS_SELECTED")  
+          //   break;
+          // check nếu còn slot ngành này, === người ngày ở NV này đã trúng tuyển
+          if (dsTrungTuyenTamThoi[wish.maNganh] && chiTieuNganh[wish.maNganh] > dsTrungTuyenTamThoi[wish.maNganh].length) { // còn slot
             candidatePriorityWish = wish;
             break;
           }
@@ -117,10 +120,34 @@ export class WishListService {
         }
         // còn nguyện vọng ko?
         // sortedCandidates = sortedCandidates.filter((item, i) => item.length > 0);
-        if (candidatePriorityWish == null) {  // tạch hết rồi, cút
+
+        if (candidatePriorityWish == null) {  // tạch hết rồi, cút thôi
           continue;
         }
-        dsTrungTuyenTamThoi[candidatePriorityWish.maNganh].push(candidatePriorityWish); // lấy người này vào ngành này
+        // ngươid này đã từng đậu ngành nào chưa, đậu NV nào?
+        if(dsNVTrungTuyen[candidatePriorityWish.soBaoDanh]) {
+          // đã từng đậu ngành này rồi
+          // kiểm tra xem nguyện vọng này có cao hơn nguyện vọng trước đó ko?
+          if(candidatePriorityWish.nguyenVong < dsNVTrungTuyen[candidatePriorityWish.soBaoDanh].nguyenVong) {
+            // xóa người này đậu bất kì ngành nào trước đó
+            console.log('candidatePriorityWish.soBaoDanh :>> ', dsNVTrungTuyen[candidatePriorityWish.soBaoDanh]);
+            const item = dsNVTrungTuyen[candidatePriorityWish.soBaoDanh];
+            // dsNVTrungTuyen[candidatePriorityWish.soBaoDanh].forEach((item) => {
+              dsTrungTuyenTamThoi[item.maNganh] = dsTrungTuyenTamThoi[item.maNganh].filter((item) => item.soBaoDanh != candidatePriorityWish.soBaoDanh);
+            // });
+           // dsTrungTuyenTamThoi[dsNVTrungTuyen[candidatePriorityWish.soBaoDanh].maNganh] = dsTrungTuyenTamThoi[dsNVTrungTuyen[candidatePriorityWish.soBaoDanh].maNganh].filter((item) => item.soBaoDanh != candidatePriorityWish.soBaoDanh);
+            // thêm người này vào ngành này
+            dsTrungTuyenTamThoi[candidatePriorityWish.maNganh].push(candidatePriorityWish);
+            // cập nhật lại người đậu ngành này
+            dsNVTrungTuyen[candidatePriorityWish.soBaoDanh] = candidatePriorityWish;
+          } 
+        } // chưa từng đậu ngành nao
+        else if (dsTrungTuyen[candidatePriorityWish.soBaoDanh]!= "IS_SELECTED") {
+          dsTrungTuyenTamThoi[candidatePriorityWish.maNganh].push(candidatePriorityWish); // lấy người này vào ngành này
+          dsTrungTuyen[candidatePriorityWish.soBaoDanh] = "IS_SELECTED";
+          dsNVTrungTuyen[candidatePriorityWish.soBaoDanh] = candidatePriorityWish;
+        }
+        
       }
       // let breakNow = true;
       // for (let key in dsTrungTuyenTamThoi) {

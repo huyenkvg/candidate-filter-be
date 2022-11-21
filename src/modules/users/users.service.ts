@@ -67,7 +67,15 @@ export class UsersService {
     });
   }
   async findAll() {
-    return await this.prisma.users.findMany();
+    return await this.prisma.users.findMany({
+      select: {
+        id: true,
+        profile: true,
+        role: true,
+        username: true,
+        active: true,
+      },
+    });
   }
 
 
