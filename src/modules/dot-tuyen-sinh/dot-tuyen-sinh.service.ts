@@ -40,7 +40,11 @@ export class DotTuyenSinhService {
         maDotTuyenSinh: id,
       },
       include: {
-        danh_sach_trung_tuyen: true,
+        danh_sach_trung_tuyen: {
+          include: {
+            thong_tin_ca_nhan: true,
+          },
+        },
         danh_sach_nguyen_vong: true,
         chi_tieu_tuyen_sinh: {
           include: {
@@ -345,10 +349,12 @@ export class DotTuyenSinhService {
         select: {
           maNganh: true,
           chiTieu: true,
+          chi_tieu_to_hop: true,
         },
       }).then(r => {
         return r.reduce((obj, item) => {
           obj[item.maNganh] = item.chiTieu;
+          // obj[item.maNganh + '-chitieutohop'] = item.chi_tieu_to_hop.length > 0 ? item.chi_tieu_to_hop : null;
           return obj;
         }, {});
       }).catch(e => {

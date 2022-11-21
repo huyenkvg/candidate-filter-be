@@ -59,7 +59,21 @@ export class WishListService {
     }
     return result;
   }
-
+  kiemTraChiTieu(chiTieuNganh, wish) {
+    // let tit = wish['maNganh'] + '-chitieutohop';
+    // if (!chiTieuNganh[tit]) {
+    //   return "True-1";
+    // }
+    // else if (
+    //   chiTieuNganh[tit].some((item) => {
+    //     return item['maNganh'] == wish['maNganh'] && item['toHopMon'] == wish['toHopMon'] && item['chiTieu'] > 0;
+    //   })
+    // ) {
+    //   return "True-2";
+    // }
+    // return null;
+    return true;
+  }
   // Hàm này dùng để xử lý nguyện vọng của thí sinh
   // wishListOfAll là danh sách nguyện vọng của tất cả thí sinh được gom nhóm theo combinedKey ( = `soBaoDanh@maNganh`)
   // kiểu như này: { '123@123':
@@ -79,6 +93,8 @@ export class WishListService {
     const dsNVTrungTuyen = {};
     const dsTrungTuyenTamThoi = {};
     Object.keys(chiTieuNganh).forEach((key) => {
+      if (key.includes('chitieutohop'))
+        return;
       // dsTrungTuyen[key] = [];
       dsTrungTuyenTamThoi[key] = [];
     });
@@ -111,7 +127,10 @@ export class WishListService {
           // if(dsTrungTuyen[wish.soBaoDanh] == "IS_SELECTED")  
           //   break;
           // check nếu còn slot ngành này, === người ngày ở NV này đã trúng tuyển
-          if (dsTrungTuyenTamThoi[wish.maNganh] && chiTieuNganh[wish.maNganh] > dsTrungTuyenTamThoi[wish.maNganh].length) { // còn slot
+          if (dsTrungTuyenTamThoi[wish.maNganh] && chiTieuNganh[wish.maNganh] > dsTrungTuyenTamThoi[wish.maNganh].length && this.kiemTraChiTieu(chiTieuNganh, wish)) { // còn slot
+            // if (this.kiemTraChiTieu(chiTieuNganh, wish) == "True-2") {
+            //   chiTieuNganh[wish.maNganh + '-chitieutohop'] -= 1;
+            // }
             candidatePriorityWish = wish;
             break;
           }

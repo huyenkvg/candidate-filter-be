@@ -19,32 +19,34 @@ model chi_tieu_tuyen_sinh {
 }
 
 model danh_sach_nguyen_vong {
-  maKhoaTuyenSinh   Int?
-  soBaoDanh         String             @db.NVarChar(30)
-  maDotTuyenSinh    Int
-  nguyenVong        Int
-  maNganh           String             @db.NVarChar(30)
-  maToHopXetTuyen   String             @db.NVarChar(10)
-  diemMon1          Float?
-  diemMon2          Float?
-  diemMon3          Float?
-  tongDiem          Float?
-  dot_tuyen_sinh    dot_tuyen_sinh     @relation(fields: [maDotTuyenSinh], references: [maDotTuyenSinh], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_dot_tuyen_sinh")
-  nganh             nganh              @relation(fields: [maNganh], references: [maNganh], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_nganh")
-  thong_tin_ca_nhan thong_tin_ca_nhan? @relation(fields: [maKhoaTuyenSinh, soBaoDanh], references: [maKhoaTuyenSinh, soBaoDanh], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_thong_tin_ca_nhan")
-  to_hop_xet_tuyen  to_hop_xet_tuyen   @relation(fields: [maToHopXetTuyen], references: [maToHop], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_to_hop_xet_tuyen")
+  maKhoaTuyenSinh       Int?
+  soBaoDanh             String                  @db.NVarChar(30)
+  maDotTuyenSinh        Int
+  nguyenVong            Int
+  maNganh               String                  @db.NVarChar(30)
+  maToHopXetTuyen       String                  @db.NVarChar(10)
+  diemMon1              Float?
+  diemMon2              Float?
+  diemMon3              Float?
+  tongDiem              Float?
+  dot_tuyen_sinh        dot_tuyen_sinh          @relation(fields: [maDotTuyenSinh], references: [maDotTuyenSinh], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_dot_tuyen_sinh")
+  nganh                 nganh                   @relation(fields: [maNganh], references: [maNganh], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_nganh")
+  thong_tin_ca_nhan     thong_tin_ca_nhan?      @relation(fields: [maKhoaTuyenSinh, soBaoDanh], references: [maKhoaTuyenSinh, soBaoDanh], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_thong_tin_ca_nhan")
+  to_hop_xet_tuyen      to_hop_xet_tuyen        @relation(fields: [maToHopXetTuyen], references: [maToHop], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_to_hop_xet_tuyen")
+  danh_sach_trung_tuyen danh_sach_trung_tuyen[]
 
   @@id([soBaoDanh, maDotTuyenSinh, nguyenVong], map: "PK_danh_sach_nguyen_vong")
 }
 
 model danh_sach_trung_tuyen {
-  maKhoaTuyenSinh      Int
-  soBaoDanh            String            @db.NVarChar(30)
-  nguyenVongTrungTuyen Int?
-  maDotTuyenSinh       Int
-  dot_tuyen_sinh       dot_tuyen_sinh    @relation(fields: [maDotTuyenSinh], references: [maDotTuyenSinh], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_dot_tuyen_sinh")
-  khoa_tuyen_sinh      khoa_tuyen_sinh   @relation(fields: [maKhoaTuyenSinh], references: [maKhoa], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_khoa_tuyen_sinh")
-  thong_tin_ca_nhan    thong_tin_ca_nhan @relation(fields: [maKhoaTuyenSinh, soBaoDanh], references: [maKhoaTuyenSinh, soBaoDanh], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_thong_tin_ca_nhan")
+  maKhoaTuyenSinh       Int
+  soBaoDanh             String                 @db.NVarChar(30)
+  nguyenVongTrungTuyen  Int?
+  maDotTuyenSinh        Int
+  danh_sach_nguyen_vong danh_sach_nguyen_vong? @relation(fields: [soBaoDanh, maDotTuyenSinh, nguyenVongTrungTuyen], references: [soBaoDanh, maDotTuyenSinh, nguyenVong], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_danh_sach_nguyen_vong")
+  dot_tuyen_sinh        dot_tuyen_sinh         @relation(fields: [maDotTuyenSinh], references: [maDotTuyenSinh], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_dot_tuyen_sinh")
+  khoa_tuyen_sinh       khoa_tuyen_sinh        @relation(fields: [maKhoaTuyenSinh], references: [maKhoa], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_khoa_tuyen_sinh")
+  thong_tin_ca_nhan     thong_tin_ca_nhan      @relation(fields: [maKhoaTuyenSinh, soBaoDanh], references: [maKhoaTuyenSinh, soBaoDanh], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_thong_tin_ca_nhan")
 
   @@id([maKhoaTuyenSinh, soBaoDanh], map: "PK_danh_sach_trung_tuyen")
   @@unique([maDotTuyenSinh, soBaoDanh], map: "UK_DSTT")
