@@ -7,10 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model chi_tieu_to_hop {
+  maDotTuyenSinh      Int
+  maNganh             String              @db.NVarChar(30)
+  maToHop             String              @db.NVarChar(10)
+  chiTieu             Int?
+  chi_tieu_tuyen_sinh chi_tieu_tuyen_sinh @relation(fields: [maNganh, maDotTuyenSinh], references: [maNganh, maDotTuyenSinh], onUpdate: NoAction, map: "FK_chi_tieu_to_hop_chi_tieu_tuyen_sinh")
+
+  @@id([maDotTuyenSinh, maNganh, maToHop], map: "PK_chi_tieu_to_hop")
+}
+
 model chi_tieu_tuyen_sinh {
   maNganh         String            @db.NVarChar(30)
   maDotTuyenSinh  Int
   chiTieu         Int?
+  diemSan         Int?
   dot_tuyen_sinh  dot_tuyen_sinh    @relation(fields: [maDotTuyenSinh], references: [maDotTuyenSinh], onUpdate: NoAction, map: "FK_chi_tieu_tuyen_sinh_dot_tuyen_sinh")
   nganh           nganh             @relation(fields: [maNganh], references: [maNganh], onUpdate: NoAction, map: "FK_chi_tieu_tuyen_sinh_nganh")
   chi_tieu_to_hop chi_tieu_to_hop[]
@@ -24,15 +35,17 @@ model danh_sach_nguyen_vong {
   maDotTuyenSinh        Int
   nguyenVong            Int
   maNganh               String                  @db.NVarChar(30)
-  maToHopXetTuyen       String                  @db.NVarChar(10)
+  maToHopXetTuyen       String?                 @db.NVarChar(10)
   diemMon1              Float?
   diemMon2              Float?
   diemMon3              Float?
   tongDiem              Float?
+  dieuKienKhac          Int?
+  cmnd                  String?                 @db.NVarChar(50)
   dot_tuyen_sinh        dot_tuyen_sinh          @relation(fields: [maDotTuyenSinh], references: [maDotTuyenSinh], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_dot_tuyen_sinh")
   nganh                 nganh                   @relation(fields: [maNganh], references: [maNganh], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_nganh")
   thong_tin_ca_nhan     thong_tin_ca_nhan?      @relation(fields: [maKhoaTuyenSinh, soBaoDanh], references: [maKhoaTuyenSinh, soBaoDanh], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_thong_tin_ca_nhan")
-  to_hop_xet_tuyen      to_hop_xet_tuyen        @relation(fields: [maToHopXetTuyen], references: [maToHop], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_to_hop_xet_tuyen")
+  to_hop_xet_tuyen      to_hop_xet_tuyen?       @relation(fields: [maToHopXetTuyen], references: [maToHop], onDelete: NoAction, onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_to_hop_xet_tuyen")
   danh_sach_trung_tuyen danh_sach_trung_tuyen[]
 
   @@id([soBaoDanh, maDotTuyenSinh, nguyenVong], map: "PK_danh_sach_nguyen_vong")
@@ -52,15 +65,27 @@ model danh_sach_trung_tuyen {
   @@unique([maDotTuyenSinh, soBaoDanh], map: "UK_DSTT")
 }
 
+model diem_chuan {
+  maNganh        String         @db.NVarChar(30)
+  maDotTuyenSinh Int
+  diemChuan      Float?
+  dot_tuyen_sinh dot_tuyen_sinh @relation(fields: [maDotTuyenSinh], references: [maDotTuyenSinh], onUpdate: NoAction, map: "FK_diem_chuan_dot_tuyen_sinh")
+  nganh          nganh          @relation(fields: [maNganh], references: [maNganh], onUpdate: NoAction, map: "FK_diem_chuan_nganh")
+
+  @@id([maNganh, maDotTuyenSinh], map: "PK_diem_chuan")
+}
+
 model dot_tuyen_sinh {
   maDotTuyenSinh        Int                     @id(map: "PK_dot_tuyen_sinh") @default(autoincrement())
   maKhoaTuyenSinh       Int?
   tenDotTuyenSinh       String?                 @db.NVarChar(100)
   lock                  Boolean?                @default(false, map: "DF_dot_tuyen_sinh_lock")
+  diemSan               Float?
   khoa_tuyen_sinh       khoa_tuyen_sinh?        @relation(fields: [maKhoaTuyenSinh], references: [maKhoa], onDelete: NoAction, onUpdate: NoAction, map: "FK_dot_tuyen_sinh_khoa_tuyen_sinh")
   chi_tieu_tuyen_sinh   chi_tieu_tuyen_sinh[]
   danh_sach_nguyen_vong danh_sach_nguyen_vong[]
   danh_sach_trung_tuyen danh_sach_trung_tuyen[]
+  diem_chuan            diem_chuan[]
 
   @@unique([maKhoaTuyenSinh, maDotTuyenSinh], map: "IX_dot_tuyen_sinh")
 }
@@ -78,6 +103,7 @@ model nganh {
   tenNganh              String?                 @db.NVarChar(100)
   chi_tieu_tuyen_sinh   chi_tieu_tuyen_sinh[]
   danh_sach_nguyen_vong danh_sach_nguyen_vong[]
+  diem_chuan            diem_chuan[]
 }
 
 model profile {
@@ -105,26 +131,6 @@ model sysdiagrams {
   @@unique([principal_id, name], map: "UK_principal_name")
 }
 
-model to_hop_xet_tuyen {
-  maToHop               String                  @id(map: "PK_to_hop_xet_tuyen") @db.NVarChar(10)
-  mon1                  String?                 @db.NVarChar(20)
-  mon2                  String?                 @db.NVarChar(20)
-  mon3                  String?                 @db.NVarChar(20)
-  danh_sach_nguyen_vong danh_sach_nguyen_vong[]
-
-  @@unique([mon1, mon2, mon3], map: "UK_ToHopXetTuyen")
-}
-
-model users {
-  id       Int      @id(map: "PK_user") @default(autoincrement())
-  username String   @unique(map: "UX_user") @db.NVarChar(50)
-  password String   @db.NVarChar(200)
-  role_id  Int
-  active   Boolean  @default(true, map: "DF_users_active")
-  role     role     @relation(fields: [role_id], references: [id], onUpdate: NoAction, map: "FK_user_role")
-  profile  profile?
-}
-
 model thong_tin_ca_nhan {
   maKhoaTuyenSinh       Int
   soBaoDanh             String                  @db.NVarChar(30)
@@ -147,12 +153,22 @@ model thong_tin_ca_nhan {
   @@unique([maKhoaTuyenSinh, soBaoDanh], map: "IX_thong_tin_ca_nhan")
 }
 
-model chi_tieu_to_hop {
-  maDotTuyenSinh      Int
-  maNganh             String              @db.NVarChar(30)
-  maToHop             String              @db.NVarChar(10)
-  chiTieu             Int?
-  chi_tieu_tuyen_sinh chi_tieu_tuyen_sinh @relation(fields: [maNganh, maDotTuyenSinh], references: [maNganh, maDotTuyenSinh], onUpdate: NoAction, map: "FK_chi_tieu_to_hop_chi_tieu_tuyen_sinh")
+model to_hop_xet_tuyen {
+  maToHop               String                  @id(map: "PK_to_hop_xet_tuyen") @db.NVarChar(10)
+  mon1                  String?                 @db.NVarChar(20)
+  mon2                  String?                 @db.NVarChar(20)
+  mon3                  String?                 @db.NVarChar(20)
+  danh_sach_nguyen_vong danh_sach_nguyen_vong[]
 
-  @@id([maDotTuyenSinh, maNganh, maToHop], map: "PK_chi_tieu_to_hop")
+  @@unique([mon1, mon2, mon3], map: "UK_ToHopXetTuyen")
+}
+
+model users {
+  id       Int      @id(map: "PK_user") @default(autoincrement())
+  username String   @unique(map: "UX_user") @db.NVarChar(50)
+  password String   @db.NVarChar(200)
+  role_id  Int
+  active   Boolean  @default(true, map: "DF_users_active")
+  role     role     @relation(fields: [role_id], references: [id], onUpdate: NoAction, map: "FK_user_role")
+  profile  profile?
 }

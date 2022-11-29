@@ -354,7 +354,9 @@ export class DotTuyenSinhService {
       }).then(r => {
         return r.reduce((obj, item) => {
           obj[item.maNganh] = item.chiTieu;
-          // obj[item.maNganh + '-chitieutohop'] = item.chi_tieu_to_hop.length > 0 ? item.chi_tieu_to_hop : null;
+          obj[item.maNganh + '-chitieutohop'] = item.chi_tieu_to_hop.length > 0 ? item.chi_tieu_to_hop : null;
+          console.log('item.maNganh + -chitieutohop :>> ', item.maNganh + '-chitieutohop');
+          console.log('obj[] :>> ', obj[item.maNganh + '-chitieutohop']);
           return obj;
         }, {});
       }).catch(e => {

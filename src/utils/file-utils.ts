@@ -11,6 +11,16 @@ export default class FileUtils {
     res['combinedKey'] = res['soBaoDanh'] +'@'+ res['maNganh'];
     return res;
   }
+  // No combinedKey
+  static rowToObject(row) {
+    const object_keys = this.getWishListHeader(row);
+    let row_obj = Object.keys(row);
+    let res = row_obj.reduce((obj, key, index) => {
+      obj[object_keys[index]] = row[key];
+      return obj;
+    }, {});
+    return res;
+  }
 
   static getWishListHeader(row) {
     const obj = Object.keys(row);
@@ -65,5 +75,13 @@ export default class FileUtils {
       ' ',
     );
     return str;
+  }
+
+  static chuanHoaArrayData(str: string) {
+    return str
+      .split(',')
+      .map((item) => item.trim().toUpperCase())
+      .filter((item) => item !== '')
+
   }
 }
