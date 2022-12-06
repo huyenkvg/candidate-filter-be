@@ -21,6 +21,14 @@ export class DotTuyenSinhController {
   findAll() {
     return this.dotTuyenSinhService.findAll();
   }
+  @Get('dsxt/:id')
+  get_DSXT(@Param('id') id: string) {
+    return this.dotTuyenSinhService.get_DSXT(Number.parseInt(id));
+  }
+  @Get('dstt/:id')
+  get_DSTT(@Param('id') id: string) {
+    return this.dotTuyenSinhService.get_DSTT(Number.parseInt(id));
+  }
 
   @Get(':id')
   findOne(@Param('id') id: string) {

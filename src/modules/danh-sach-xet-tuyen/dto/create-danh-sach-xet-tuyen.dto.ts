@@ -18,4 +18,6 @@ export class CreateDanhSachXetTuyenDto {
   diemMon3: number;
   @IsNotEmpty()
   tongDiem: number;
+  @IsString()
+  dieuKienKhac: string;
 }

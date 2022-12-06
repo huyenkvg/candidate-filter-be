@@ -9,4 +9,5 @@ export class CreateDotTuyenSinhDto {
   @IsString()
   @IsNotEmpty()
   tenDotTuyenSinh :  string;
+  
 }

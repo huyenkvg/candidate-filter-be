@@ -92,7 +92,7 @@ model dot_tuyen_sinh {
 
 model khoa_tuyen_sinh {
   maKhoa                Int                     @id(map: "PK_AcademicYear") @default(autoincrement())
-  tenKhoa               String                  @db.NVarChar(50)
+  tenKhoa               Int
   danh_sach_trung_tuyen danh_sach_trung_tuyen[]
   dot_tuyen_sinh        dot_tuyen_sinh[]
   thong_tin_ca_nhan     thong_tin_ca_nhan[]

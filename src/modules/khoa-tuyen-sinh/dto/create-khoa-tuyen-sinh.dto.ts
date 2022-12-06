@@ -4,7 +4,7 @@ export class CreateKhoaTuyenSinhDto {
   @IsNumber()
   maKhoa: number;
 
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  tenKhoa: string;
+  tenKhoa: number;
 }

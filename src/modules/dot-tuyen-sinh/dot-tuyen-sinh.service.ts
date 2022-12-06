@@ -34,18 +34,21 @@ export class DotTuyenSinhService {
     return this.prisma.dot_tuyen_sinh.findMany();
   }
 
-  getInfo(id: number) {
-    return this.prisma.dot_tuyen_sinh.findUnique({
+
+  async get_DSXT(maDotTuyenSinh: number) {
+    return await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_nguyen_vong, thong_tin_ca_nhan WHERE danh_sach_nguyen_vong.maDotTuyenSinh = ${maDotTuyenSinh} and (danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.soBaoDanh Or danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.cmnd and  thong_tin_ca_nhan.cmnd is not null) and  thong_tin_ca_nhan.maKhoaTuyenSinh = (select maKhoaTuyenSinh from dot_tuyen_sinh where maDotTuyenSinh = ${maDotTuyenSinh})`;
+  }
+  async get_DSTT(maDotTuyenSinh: number) {
+    return await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_trung_tuyen inner join danh_sach_nguyen_vong on danh_sach_trung_tuyen.sobaoDanh = danh_sach_nguyen_vong.sobaoDanh and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh and danh_sach_trung_tuyen.nguyenVongTrungTuyen = danh_sach_nguyen_vong.nguyenVong 
+    inner join thong_tin_ca_nhan on (danh_sach_trung_tuyen.sobaoDanh = thong_tin_ca_nhan.sobaoDanh or danh_sach_trung_tuyen.sobaoDanh = thong_tin_ca_nhan.sobaoDanh ) and danh_sach_trung_tuyen.maDotTuyenSinh = ${maDotTuyenSinh} and thong_tin_ca_nhan.maKhoaTuyenSinh = (select maKhoaTuyenSinh from dot_tuyen_sinh where maDotTuyenSinh = ${maDotTuyenSinh})`;
+    // , thong_tin_ca_nhan WHERE danh_sach_trung_tuyen.maDotTuyenSinh = ${maDotTuyenSinh} and (danh_sach_trung_tuyen.soBaoDanh = thong_tin_ca_nhan.soBaoDanh Or danh_sach_trung_tuyen.soBaoDanh = thong_tin_ca_nhan.cmnd)`;
+  }
+  async getInfo(id: number) {
+    return await this.prisma.dot_tuyen_sinh.findUnique({
       where: {
         maDotTuyenSinh: id,
       },
       include: {
-        danh_sach_trung_tuyen: {
-          include: {
-            thong_tin_ca_nhan: true,
-          },
-        },
-        danh_sach_nguyen_vong: true,
         chi_tieu_tuyen_sinh: {
           include: {
             chi_tieu_to_hop: true
@@ -60,7 +63,7 @@ export class DotTuyenSinhService {
           },
         },
       },
-    });
+    })
   }
 
   update(updateDotTuyenSinhDto: UpdateDotTuyenSinhDto) {
@@ -73,7 +76,41 @@ export class DotTuyenSinhService {
     });
   }
 
-  remove(id: number) {
+  async remove(id: number) {
+
+    // const deleteDSTT= this.prisma.danh_sach_trung_tuyen.deleteMany({
+    //   where: {
+    //     maDotTuyenSinh: id,
+    //   },
+    // });
+    // const deleteDSNV= this.prisma.danh_sach_nguyen_vong.deleteMany({
+    //   where: {
+    //     maDotTuyenSinh: id,
+    //   },
+    // });
+    // const deleteCTTS= this.prisma.chi_tieu_tuyen_sinh.deleteMany({
+    //   where: {
+    //     maDotTuyenSinh: id,
+    //   },
+    // });
+    // const deleteCTTH= this.prisma.chi_tieu_to_hop.deleteMany({
+    //   where: {
+    //     maDotTuyenSinh: id,
+    //   },
+    // });
+    const deleteDot = this.prisma.dot_tuyen_sinh.delete({
+      where: {
+        maDotTuyenSinh: id,
+      },
+    });
+
+
+
+    // return await this.prisma.$transaction([deleteDSTT, deleteDSNV]).then(()=>{
+    //   return this.prisma.$transaction([deleteCTTS, deleteCTTH]).then(()=>{
+    //     return this.prisma.$transaction([deleteDot]);
+    //   })
+    // });
     return this.prisma.dot_tuyen_sinh.delete({
       where: {
         maDotTuyenSinh: id,
@@ -129,24 +166,38 @@ export class DotTuyenSinhService {
       return "failure"
     });
   }
-  kiemTraTrungThiSinh(wishList, maDotTuyenSinh) {
+  async kiemTraTrungThiSinh(wishList, maDotTuyenSinh) {
+    const khoa_tuyen_sinh = await this.prisma.dot_tuyen_sinh.findUnique({
+      where: {
+        maDotTuyenSinh: maDotTuyenSinh,
+      },
+      select: {
+        maKhoaTuyenSinh: true,
+      },
+    });
     return this.kiemTraNguyenVong(wishList, maDotTuyenSinh).then((data) => {
       return this.prisma.danh_sach_trung_tuyen.findMany({
         where: {
-          maDotTuyenSinh: maDotTuyenSinh,
+          // maDotTuyenSinh: maDotTuyenSinh,
+          maKhoaTuyenSinh: khoa_tuyen_sinh.maKhoaTuyenSinh,
         },
       }).then((res) => {
-        return data.valid.reduce((ret, curr) => {
+        // console.log('res :>> ', res);
+        // item là nguyện vọng đợt trước trúng tuyển
+        // curr là nguyện vọng đợt hiện tại
+        return data.valid.reduce((retu, curr) => {
           const trung = res.find((item) => {
-            return item.soBaoDanh === curr.soBaoDanh;
+            return (item.soBaoDanh == curr.soBaoDanh && item.nguyenVongTrungTuyen < curr.nguyenVong || item.soBaoDanh == curr.cmnd && item.nguyenVongTrungTuyen < curr.nguyenVong);
+
+
           });
           if (trung) {
-            ret['invalid'].push({ soBaoDanh: curr.soBaoDanh, maNganh: curr.maNganh, maToHopXetTuyen: curr.maToHopXetTuyen, reason: 'Đã Trúng tuyển ở đợt trước đó' });
+            retu['invalid'].push({ soBaoDanh: curr.soBaoDanh, maNganh: curr.maNganh, maToHopXetTuyen: curr.maToHopXetTuyen, reason: 'Đã Trúng tuyển đợt tuyển sinh trước, và nguyện vọng trước cao hơn' });
           }
           else {
-            ret['valid'].push(curr);
+            retu['valid'].push(curr);
           }
-          return ret;
+          return retu;
         }, { valid: [], invalid: data.invalid });
       })
     })
@@ -211,10 +262,10 @@ export class DotTuyenSinhService {
       await this.kiemTraTrungThiSinh(wishList, id).then(async (res) => {
         if (res.valid.length > 0) {
           try {
-            return await this.deleteManyNguyenVongByDotTuyenSinh(id).then((r) => {
-              console.log('r :>> ', r);
+            return await this.deleteManyNguyenVongByDotTuyenSinh(id).then((r_delete) => {
+              // console.log('r :>> ', r);
               return this.createManyNguyenVong(id, res.valid).then(async r => {
-                if (r) {// Thêm vào ds nguyện vọng thành công
+                if (r_delete) {// Thêm vào ds nguyện vọng thành công
                   // lọc ds nguyện vọng
                   return this.locDSTrungTuyen(id, await this.wl_service.groupBy(wishList, 'combinedKey'));
                 }
@@ -279,8 +330,10 @@ export class DotTuyenSinhService {
             return {
               maDotTuyenSinh: maDotTuyenSinh,
               maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
-              soBaoDanh: '' + item.soBaoDanh,
+              soBaoDanh: '' + item.soBaoDanh ? item.soBaoDanh : item.cmnd,
+              cmnd: '' + item.cmnd,
               maNganh: '' + item.maNganh,
+              dieukienKhac: item.dieukienKhac,
               maToHopXetTuyen: '' + item.maToHopXetTuyen,
               nguyenVong: Number.parseInt(item.nguyenVong),
               tongDiem: (item.tongDiem),
@@ -295,7 +348,7 @@ export class DotTuyenSinhService {
 
   }
 
-
+  // truyeenf vaof ID dot tuyen sinh và ds nguyện vọng được group theo soBaoDanh@maNganh
   async locDSTrungTuyen(maDotTuyenSinh: number, groupByCombinedKey: Object) {
     const khoa = await this.prisma.dot_tuyen_sinh.findUnique({
       where: {
@@ -315,8 +368,8 @@ export class DotTuyenSinhService {
           count2[item.soBaoDanh] = count[item.soBaoDanh];
         }
       });
-      console.log('count :>> ', count);
-      console.log('count2 :>> ', count2);
+      // console.log('count :>> ', count);
+      console.log('count2 - count trung tt :>> ', count2);
 
       return this.prisma.danh_sach_trung_tuyen.createMany({
         data: Object.values(dstt).flat().map((item: any) => (
