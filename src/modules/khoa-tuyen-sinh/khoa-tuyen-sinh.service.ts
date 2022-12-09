@@ -18,7 +18,18 @@ export class KhoaTuyenSinhService {
       })
     };
   }
-
+  groupBy(original_list, headerName) {
+    const groupedList = original_list.reduce((acc, item) => {
+      const key = item[headerName];
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(item);
+      return acc;
+    }, {});
+    // console.log('groupedWishList :>> ', groupedWishList);
+    return groupedList;
+  }
   async findAll(params: any) {
     if (params.nameOnly) {
       return this.prisma.khoa_tuyen_sinh.findMany({
@@ -89,7 +100,16 @@ export class KhoaTuyenSinhService {
     });
 
   }
-
+ async getDiemChuan(params: any) {
+    return await this.prisma.$queryRaw<any[]>`  select tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh, min(tongDiem) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong 
+    on danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and danh_sach_nguyen_vong.nguyenVong = danh_sach_trung_tuyen.nguyenVongTrungTuyen 
+    and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh   
+    inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh
+    inner join dot_tuyen_sinh on dot_tuyen_sinh.maDotTuyenSinh = danh_sach_trung_tuyen.maDotTuyenSinh
+    inner join khoa_tuyen_sinh as kts on danh_sach_nguyen_vong.maKhoaTuyenSinh = kts.maKhoa
+    where kts.tenKhoa >= ${params.khoa_start} and kts.tenKhoa <=  ${params.khoa_end}
+    group by tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh`
+  }
 
   async thongKe(params: any) {
     // let query = `SELECT * FROM khoa_tuyen_sinh`;
@@ -97,18 +117,18 @@ export class KhoaTuyenSinhService {
     const data_khoa = await this.prisma.$queryRaw<any[]>`SELECT * FROM khoa_tuyen_sinh WHERE tenKhoa >= ${params.khoa_start} AND tenKhoa <= ${params.khoa_end} order by tenKhoa asc`
     // const data_khoa = await this.prisma.khoa_tuyen_sinh.findMany()
     await console.log('data_khoa :>> ', data_khoa);
-    let result = Promise.all(data_khoa.map(async (item) => {
+    let result = await Promise.all(data_khoa.map(async (item) => {
         return {
           key: item.maKhoa,
           ...item,
-          danh_sach_dot_tuyen: await this.prisma.dot_tuyen_sinh.findMany({
-            where: {
-              maKhoaTuyenSinh: item.maKhoa,
-            },
-            // include: {
-            //   danh_sach_trung_tuyen: true,
-            // }
-          }),
+          // danh_sach_dot_tuyen: await this.prisma.dot_tuyen_sinh.findMany({
+          //   where: {
+          //     maKhoaTuyenSinh: item.maKhoa,
+          //   },
+          //   // include: {
+          //   //   danh_sach_trung_tuyen: true,
+          //   // }
+          // }),
           count_dot_tuyen_sinh: await this.prisma.dot_tuyen_sinh.count({
             where: {
               maKhoaTuyenSinh: item.maKhoa,
@@ -127,23 +147,16 @@ export class KhoaTuyenSinhService {
         };
 
       }))
-    let pie = await this.prisma.chi_tieu_tuyen_sinh.findMany({
-      where: {
-        dot_tuyen_sinh: {
-         where: {
-          khoa_tuyen_sinh: {
-            tenKhoa: {
-              gte: params.khoa_start,
-              lte: params.khoa_end
-            }
-          }
-         }
-        }
-      },
-    })
+
+    let pie = await this.prisma.$queryRaw<any[]>`select  tenNganh, sum(chiTieu)  as  chi_tieu_tuyen  from khoa_tuyen_sinh as kts inner join dot_tuyen_sinh as dts on dts.maKhoaTuyenSinh = kts.maKhoa inner join chi_tieu_tuyen_sinh as ctts on ctts.maDotTuyenSinh = dts.maDotTuyenSinh inner join nganh as ng on ctts.maNganh = ng.maNganh 
+      where kts.tenKhoa >= ${params.khoa_start} and kts.tenKhoa <=  ${params.khoa_end}  group by  tenNganh`
+    // let pie = await this.prisma.$queryRaw<any[]>`select  tenKhoa, tenDotTuyenSinh,maNganh, sum(chiTieu)  as  i  from khoa_tuyen_sinh as kts inner join dot_tuyen_sinh as dts on dts.maKhoaTuyenSinh = kts.maKhoa inner join chi_tieu_tuyen_sinh as ctts on ctts.maDotTuyenSinh = dts.maDotTuyenSinh
+    // where kts.tenKhoa >= ${params.khoa_start} and kts.tenKhoa <= ${params.khoa_end} group by tenKhoa, tenDotTuyenSinh, maNganh order by tenKhoa`
+    let danh_sach_diem_chuan =  await this.getDiemChuan(params);
     return {
       bar: result,
-      pie: pie
+      pie: pie,
+      danh_sach_diem_chuan: danh_sach_diem_chuan
     }
   }
 }

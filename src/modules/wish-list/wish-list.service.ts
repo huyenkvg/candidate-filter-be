@@ -149,7 +149,7 @@ export class WishListService {
           // kiểm tra xem nguyện vọng này có cao hơn nguyện vọng trước đó ko?
           if(candidatePriorityWish.nguyenVong < dsNVTrungTuyen[candidatePriorityWish.soBaoDanh].nguyenVong) {
             // xóa người này đậu bất kì ngành nào trước đó
-            console.log('candidatePriorityWish.soBaoDanh :>> ', dsNVTrungTuyen[candidatePriorityWish.soBaoDanh]);
+            //console.log('candidatePriorityWish.soBaoDanh :>> ', dsNVTrungTuyen[candidatePriorityWish.soBaoDanh]);
             const item = dsNVTrungTuyen[candidatePriorityWish.soBaoDanh];
             // dsNVTrungTuyen[candidatePriorityWish.soBaoDanh].forEach((item) => {
               dsTrungTuyenTamThoi[item.maNganh] = dsTrungTuyenTamThoi[item.maNganh].filter((item) => item.soBaoDanh != candidatePriorityWish.soBaoDanh);
