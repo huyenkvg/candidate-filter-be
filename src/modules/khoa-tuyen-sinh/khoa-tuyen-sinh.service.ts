@@ -94,7 +94,7 @@ export class KhoaTuyenSinhService {
   async thongKe(params: any) {
     // let query = `SELECT * FROM khoa_tuyen_sinh`;
     console.log('params :>> ', params);
-    const data_khoa = await this.prisma.$queryRaw<any[]>`SELECT * FROM khoa_tuyen_sinh `
+    const data_khoa = await this.prisma.$queryRaw<any[]>`SELECT * FROM khoa_tuyen_sinh WHERE tenKhoa >= ${params.khoa_start} AND tenKhoa <= ${params.khoa_end} order by tenKhoa asc`
     // const data_khoa = await this.prisma.khoa_tuyen_sinh.findMany()
     await console.log('data_khoa :>> ', data_khoa);
     let result = Promise.all(data_khoa.map(async (item) => {
@@ -114,6 +114,11 @@ export class KhoaTuyenSinhService {
               maKhoaTuyenSinh: item.maKhoa,
             },
           }),
+          count_nguyen_vong: await this.prisma.danh_sach_nguyen_vong.count({
+            where: {
+              maKhoaTuyenSinh: item.maKhoa,
+            },
+          }),
           count_trung_tuyen: await this.prisma.danh_sach_trung_tuyen.count({
             where: {
               maKhoaTuyenSinh: item.maKhoa,
@@ -122,6 +127,23 @@ export class KhoaTuyenSinhService {
         };
 
       }))
-    return result;
+    let pie = await this.prisma.chi_tieu_tuyen_sinh.findMany({
+      where: {
+        dot_tuyen_sinh: {
+         where: {
+          khoa_tuyen_sinh: {
+            tenKhoa: {
+              gte: params.khoa_start,
+              lte: params.khoa_end
+            }
+          }
+         }
+        }
+      },
+    })
+    return {
+      bar: result,
+      pie: pie
+    }
   }
 }
