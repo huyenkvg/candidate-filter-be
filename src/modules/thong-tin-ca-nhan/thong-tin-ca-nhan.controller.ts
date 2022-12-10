@@ -28,6 +28,11 @@ export class ThongTinCaNhanController {
     return this.thongTinCaNhanService.update(updateThongTinCaNhanDto);
   }
 
+  @Delete('delete-all-by-khoa/:id')
+  removeAll(@Param('id') id: string) {
+    return this.thongTinCaNhanService.removeAllByKhoa(Number.parseInt(id));
+  }
+
   @Delete('/:id/:maKhoaTuyenSinh')
   remove(@Param('id') id: string, @Param('maKhoaTuyenSinh') maKhoaTuyenSinh: number) {
     return this.thongTinCaNhanService.remove(id, maKhoaTuyenSinh);

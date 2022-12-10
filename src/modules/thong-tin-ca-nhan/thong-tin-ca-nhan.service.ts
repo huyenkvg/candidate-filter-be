@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { Http2ServerResponse } from 'http2';
 import { CreateThongTinCaNhanDto } from './dto/create-thong-tin-ca-nhan.dto';
 import { UpdateThongTinCaNhanDto } from './dto/update-thong-tin-ca-nhan.dto';
 
@@ -75,6 +76,9 @@ export class ThongTinCaNhanService {
     });
   }
 
+  removeAllByKhoa(maKhoaTuyenSinh: number) {
+    return this.prisma.$queryRaw`DELETE FROM thong_tin_ca_nhan WHERE maKhoaTuyenSinh = ${maKhoaTuyenSinh}`
+  }
   remove(soBaoDanh, maKhoaTuyenSinh) {
     return this.prisma.thong_tin_ca_nhan.delete({
       where: {

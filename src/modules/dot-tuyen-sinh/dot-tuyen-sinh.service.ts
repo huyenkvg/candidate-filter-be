@@ -98,11 +98,11 @@ export class DotTuyenSinhService {
     //     maDotTuyenSinh: id,
     //   },
     // });
-    const deleteDot = this.prisma.dot_tuyen_sinh.delete({
-      where: {
-        maDotTuyenSinh: id,
-      },
-    });
+    // const deleteDot = this.prisma.dot_tuyen_sinh.delete({
+    //   where: {
+    //     maDotTuyenSinh: id,
+    //   },
+    // });
 
 
 
@@ -111,11 +111,12 @@ export class DotTuyenSinhService {
     //     return this.prisma.$transaction([deleteDot]);
     //   })
     // });
-    return this.prisma.dot_tuyen_sinh.delete({
-      where: {
-        maDotTuyenSinh: id,
-      },
-    });
+    await this.prisma.$queryRaw`DELETE FROM danh_sach_trung_tuyen WHERE maDotTuyenSinh = ${id}`;
+    await this.prisma.$queryRaw`DELETE FROM danh_sach_nguyen_vong WHERE maDotTuyenSinh = ${id}`;
+    await this.prisma.$queryRaw`DELETE FROM chi_tieu_to_hop WHERE maDotTuyenSinh = ${id}`;
+    await this.prisma.$queryRaw`DELETE FROM chi_tieu_tuyen_sinh WHERE maDotTuyenSinh = ${id}`;
+    return await this.prisma.$queryRaw`DELETE FROM dot_tuyen_sinh WHERE maDotTuyenSinh = ${id}`;
+
   }
 
 
@@ -190,12 +191,12 @@ export class DotTuyenSinhService {
         // curr là nguyện vọng đợt hiện tại
         return data.valid.reduce((retu, curr) => {
           const trung = res.find((item) => {
-            return (item.maDotTuyenSinh < maDotTuyenSinh &&    item.soBaoDanh == curr.soBaoDanh && item.nguyenVongTrungTuyen <= curr.nguyenVong || item.soBaoDanh == curr.cmnd && item.nguyenVongTrungTuyen <= curr.nguyenVong);
+            return (item.maDotTuyenSinh < maDotTuyenSinh &&    item.soBaoDanh == curr.soBaoDanh && item.nguyenVongTrungTuyen == curr.nguyenVong || item.soBaoDanh == curr.cmnd && item.nguyenVongTrungTuyen == curr.nguyenVong);
 
 
           });
           if (trung) {
-            retu['invalid'].push({ soBaoDanh: curr.soBaoDanh, maNganh: curr.maNganh, maToHopXetTuyen: curr.maToHopXetTuyen, reason: 'Đã Trúng tuyển đợt tuyển sinh trước, và nguyện vọng trước cao hơn' });
+            retu['invalid'].push({ soBaoDanh: curr.soBaoDanh, maNganh: curr.maNganh, maToHopXetTuyen: curr.maToHopXetTuyen, reason: 'ĐÃ XÉT NGUYỆN VỌNG NÀY Ở ĐỢT XÉT TUYỂN TRƯỚC' });
           }
           else {
             retu['valid'].push(curr);
@@ -265,15 +266,16 @@ export class DotTuyenSinhService {
       await this.kiemTraTrungThiSinh(wishList, id).then(async (res) => {
         if (res.valid.length > 0) {
           try {
-            return await this.deleteManyNguyenVongByDotTuyenSinh(id).then((r_delete) => {
-              console.log('r_delete :>> ', r_delete);
+
+            return await this.deleteManyNguyenVongByDotTuyenSinh(id).then(() => {
+              // console.log('r_delete :>> ', r_delete);
               return this.createManyNguyenVong(id, res.valid).then(async r => {
-                if (r_delete) {// Thêm vào ds nguyện vọng thành công
+                // Thêm vào ds nguyện vọng thành công
                   // lọc ds nguyện vọng
                   // console.log('wishList[1] :>> ', wishList[1]);
                   // console.log('res.valid 1 :>> ',res.valid[1]);
-                  return this.locDSTrungTuyen(id, await this.wl_service.groupBy(res.valid, 'combinedKey'));
-                }
+                return this.locDSTrungTuyen(id, await this.wl_service.groupBy(wishList, 'combinedKey'));
+
               }).catch(e => {
                 console.log('e :>> ', e);
                 return { error: 'Error while saving file' };
@@ -296,12 +298,13 @@ export class DotTuyenSinhService {
   }
 
   async deleteManyNguyenVongByDotTuyenSinh(maDotTuyenSinh: number) {
-    return {
-      number:
-        await this.prisma.$executeRaw`DELETE FROM "danh_sach_nguyen_vong" WHERE "maDotTuyenSinh" = ${maDotTuyenSinh}`,
-    }
+    await Promise.all([
+      this.prisma.$executeRaw`DELETE FROM danh_sach_trung_tuyen WHERE maDotTuyenSinh = ${maDotTuyenSinh}`,
+      this.prisma.$executeRaw`DELETE FROM danh_sach_nguyen_vong WHERE maDotTuyenSinh = ${maDotTuyenSinh}`,
+    ]);
   }
   async createManyDSTT(maDotTuyenSinh, data, khoa) {
+
     return Promise.all(data.map(async (item) => {
       try {
         await this.prisma.danh_sach_trung_tuyen.create({
@@ -313,13 +316,20 @@ export class DotTuyenSinhService {
           }
         })
       } catch (e) {
+        // console.log('data e :>> ', e);
+        // Lỗi trùng  sẽ nhảy vào đây
+        // Trùng Thí sinh ở 1 khoá thì ta sẽ xem xét nguyện vọng
         await this.prisma.danh_sach_trung_tuyen.findFirst({
           where: {
             maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
             soBaoDanh: item.soBaoDanh,
           }
         }).then(r => {
-          if (r) {
+          console.log('nguyện vọng đợt này là :>> ', item.nguyenVong);
+          console.log('trùng thí sinh: thí sinh đã đậu 1 đợt trong khoá  :>> ', r);
+
+          if (r.maDotTuyenSinh <= maDotTuyenSinh && item.nguyenVong < r.nguyenVongTrungTuyen) { // đợt đã đậu xảy ra trước và nguyện vọng của đợt này nhỏ hơn đợt đã đậu
+            // Nếu đúng, ta sẽ chuyển nguỵen vọng này vào danh sách trúng tuyển thay cho nguyện vọng cũ
             this.prisma.danh_sach_trung_tuyen.update({
               where: {
                 maKhoaTuyenSinh_soBaoDanh: {
@@ -339,6 +349,7 @@ export class DotTuyenSinhService {
     })
     )
   }
+  // được thì được không được thì update
   async createManyThongThinCaNhan(data, khoa) {
     return Promise.all(data.map(async (item) => {
       try {
@@ -394,6 +405,8 @@ export class DotTuyenSinhService {
   //   // })
   //   // )
   // }
+  // ĐÂY LÀ CREAT NGUYỆN VỌNG XÉT TUYỂN BÌNH THƯỜNG, SO BẰNG TỔNG ĐIỂM NÊN KHÔNG CẦN ĐIỀU KIỆN KHÁC
+  // CÒN CÁC IELTS, TOEFL, SAT, ACT, THÌ CẦN GỌI  CREAT NGUYỆN VỌNG XÉT TUYỂN ĐẶC BIỆT, CREATE NGUYỆN VỌNG XÉT TUYỂN ĐẶC BIỆT không lọc theo điểm nữa mà so thứ tự nguyện vọng  với các đợt khác rồi PASS THẲNG SANG TRÚNG TUYỂN
   async createManyNguyenVong(maDotTuyenSinh: number, data: Array<any>) {
 
     return this.prisma.dot_tuyen_sinh.findUnique({
@@ -415,7 +428,7 @@ export class DotTuyenSinhService {
               soBaoDanh: '' + item.soBaoDanh ? item.soBaoDanh : item.cmnd,
               cmnd: '' + item.cmnd,
               maNganh: '' + item.maNganh,
-              dieukienKhac: item.dieukienKhac,
+              dieuKienKhac: null,
               maToHopXetTuyen: '' + item.maToHopXetTuyen,
               nguyenVong: Number.parseInt(item.nguyenVong),
               tongDiem: (item.tongDiem),
@@ -453,12 +466,8 @@ export class DotTuyenSinhService {
       });
       // console.log('count :>> ', count);
       console.log('count2 - count trung tt :>> ', count2);
-      return this.prisma.danh_sach_trung_tuyen.deleteMany({
-        where: {
-          maDotTuyenSinh: maDotTuyenSinh,
-
-        }
-      }).then(() => {
+      return this.prisma.$executeRaw`DELETE FROM danh_sach_trung_tuyen WHERE maDotTuyenSinh = ${maDotTuyenSinh}`
+        .then(() => {
         return this.createManyDSTT(maDotTuyenSinh, Object.values(dstt).flat(), khoa)
       //   return this.prisma.danh_sach_trung_tuyen.createMany({
       //   data: Object.values(dstt).flat().map((item: any) => (
@@ -470,6 +479,9 @@ export class DotTuyenSinhService {
       //     }
       //   ))
       // })
+        }).catch((e) => {
+          console.log('e :>> ', e);
+          return false;
       })
 
 
