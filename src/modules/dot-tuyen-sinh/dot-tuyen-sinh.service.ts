@@ -227,7 +227,9 @@ export class DotTuyenSinhService {
       if (!Object.keys(headerObject).includes('soBaoDanh') || !Object.keys(headerObject).includes('maNganh') || !Object.keys(headerObject).includes('nguyenVong') || !Object.keys(headerObject).includes('tongDiem') || !Object.keys(headerObject).includes('maToHopXetTuyen')) {
         return { error: 'Không đúng định dạng file, Bắt buộc có Số Báo Danh, Mã Ngành, Nguyện Vọng, Mã Tổ Hợp Xét Tuyển và Tổng Điểm' };
       }
-
+      if (wishList.length > 0 && typeof (wishList[0]['soBaoDanh']) != 'string' || typeof (wishList[0]['maNganh']) != 'string' || typeof (wishList[0]['nguyenVong']) != 'number' || typeof (wishList[0]['tongDiem']) != 'number' || typeof (wishList[0]['maToHopXetTuyen']) != 'string') {
+        return { error: 'Số báo danh, mã ngành, mã tổ hợp xét tuyển, phải là chuỗi ký tự. Nguyện vọng và tổng điểm phải là số' };
+      }
       // console.log('object :>> ', await this.kiemTraNguyenVong(wishList, id));
       return {
         wishList: wishList,
@@ -262,6 +264,9 @@ export class DotTuyenSinhService {
       if (!Object.keys(headerObject).includes('soBaoDanh') || !Object.keys(headerObject).includes('maNganh') || !Object.keys(headerObject).includes('nguyenVong') || !Object.keys(headerObject).includes('tongDiem')) {
         return { error: 'Không đúng định dạng file, Hãy xem lại các trường dữ liệu bắt buộc có hoặc sử dụng template' };
       }
+      if (wishList.length > 0 && typeof (wishList[0]['soBaoDanh']) != 'string') {
+        return { error: 'Số báo danh phải là chuỗi ký tự' };
+      }
 
       await this.kiemTraTrungThiSinh(wishList, id).then(async (res) => {
         if (res.valid.length > 0) {
@@ -274,7 +279,7 @@ export class DotTuyenSinhService {
                   // lọc ds nguyện vọng
                   // console.log('wishList[1] :>> ', wishList[1]);
                   // console.log('res.valid 1 :>> ',res.valid[1]);
-                return this.locDSTrungTuyen(id, await this.wl_service.groupBy(wishList, 'combinedKey'));
+                return this.locDSTrungTuyen(id, await this.wl_service.groupBy(res.valid, 'combinedKey'));
 
               }).catch(e => {
                 console.log('e :>> ', e);
@@ -299,8 +304,8 @@ export class DotTuyenSinhService {
 
   async deleteManyNguyenVongByDotTuyenSinh(maDotTuyenSinh: number) {
     await Promise.all([
-      this.prisma.$executeRaw`DELETE FROM danh_sach_trung_tuyen WHERE maDotTuyenSinh = ${maDotTuyenSinh}`,
-      this.prisma.$executeRaw`DELETE FROM danh_sach_nguyen_vong WHERE maDotTuyenSinh = ${maDotTuyenSinh}`,
+      await this.prisma.$executeRaw`DELETE FROM danh_sach_trung_tuyen WHERE maDotTuyenSinh = ${maDotTuyenSinh}`,
+      await this.prisma.$executeRaw`DELETE FROM danh_sach_nguyen_vong WHERE maDotTuyenSinh = ${maDotTuyenSinh}`,
     ]);
   }
   async createManyDSTT(maDotTuyenSinh, data, khoa) {
@@ -310,7 +315,7 @@ export class DotTuyenSinhService {
         await this.prisma.danh_sach_trung_tuyen.create({
           data: {
             maDotTuyenSinh: maDotTuyenSinh,
-            soBaoDanh: item.soBaoDanh,
+            soBaoDanh: '' + item.soBaoDanh,
             nguyenVongTrungTuyen: item.nguyenVong,
             maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
           }
@@ -322,26 +327,43 @@ export class DotTuyenSinhService {
         await this.prisma.danh_sach_trung_tuyen.findFirst({
           where: {
             maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
-            soBaoDanh: item.soBaoDanh,
+            soBaoDanh: '' + item.soBaoDanh,
           }
         }).then(r => {
-          console.log('nguyện vọng đợt này là :>> ', item.nguyenVong);
-          console.log('trùng thí sinh: thí sinh đã đậu 1 đợt trong khoá  :>> ', r);
 
-          if (r.maDotTuyenSinh <= maDotTuyenSinh && item.nguyenVong < r.nguyenVongTrungTuyen) { // đợt đã đậu xảy ra trước và nguyện vọng của đợt này nhỏ hơn đợt đã đậu
+          if (r && r.maDotTuyenSinh <= maDotTuyenSinh && item.nguyenVong < r.nguyenVongTrungTuyen) { // đợt đã đậu xảy ra trước và nguyện vọng của đợt này nhỏ hơn đợt đã đậu
             // Nếu đúng, ta sẽ chuyển nguỵen vọng này vào danh sách trúng tuyển thay cho nguyện vọng cũ
-            this.prisma.danh_sach_trung_tuyen.update({
-              where: {
-                maKhoaTuyenSinh_soBaoDanh: {
-                  maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
-                  soBaoDanh: item.soBaoDanh,
+          console.log('nguyện vọng đợt này là :>> ', item.nguyenVong);
+            console.log('trùng thí sinh: thí sinh đã đậu 1 đợt trong khoá  :>> ', r);
+            try {
+              this.prisma.danh_sach_trung_tuyen.update({
+                where: {
+                  maKhoaTuyenSinh_soBaoDanh: {
+                    maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
+                    soBaoDanh: '' + item.soBaoDanh,
+                  }
+                },
+                data: {
+                  nguyenVongTrungTuyen: item.nguyenVong,
+                  maDotTuyenSinh: maDotTuyenSinh
                 }
-              },
-              data: {
-                nguyenVongTrungTuyen: item.nguyenVong,
-                maDotTuyenSinh: maDotTuyenSinh
-              }
-            })
+              })
+            }
+            catch (e) {
+              console.log('e :>> ', e);
+            }
+
+          }
+          else {
+            console.log('data e :>> ', e);
+            console.log('error item :>> ', item);
+
+            switch (e.code) {
+              case 'P2002':
+                return { error: 'Trùng số báo danh' };
+              default:
+                return { error: 'Lỗi khi tạo danh sách trúng tuyển' };
+            }
           }
         })
         // return false;
@@ -468,7 +490,7 @@ export class DotTuyenSinhService {
       console.log('count2 - count trung tt :>> ', count2);
       return this.prisma.$executeRaw`DELETE FROM danh_sach_trung_tuyen WHERE maDotTuyenSinh = ${maDotTuyenSinh}`
         .then(() => {
-        return this.createManyDSTT(maDotTuyenSinh, Object.values(dstt).flat(), khoa)
+          return this.createManyDSTT(maDotTuyenSinh, Object.values(dstt).flat(), khoa)
       //   return this.prisma.danh_sach_trung_tuyen.createMany({
       //   data: Object.values(dstt).flat().map((item: any) => (
       //     {
