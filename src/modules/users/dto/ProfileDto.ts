@@ -1,24 +1,22 @@
 import { IsNotEmpty, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
-import { ProfileDto } from './ProfileDto';
 
-export class CreateUserDto {
-  @IsString()
-  @IsNotEmpty()
-  username: string;
+export class ProfileDto {
+  @IsOptional()
+  user_id: number;
 
   @IsString()
   @IsNotEmpty()
-  @MinLength(6)
-  password: string;
+  firstname: string;
 
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  role_id: number;
+  lastname: string;
+
+  @IsString()
+  @IsNotEmpty()
+  phone: string;
 
   @IsOptional()
   active: boolean;
 
-  
-  // @IsOptional()
-  // profile: any;
 }

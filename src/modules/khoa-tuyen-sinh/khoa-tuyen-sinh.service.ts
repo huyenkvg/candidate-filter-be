@@ -76,6 +76,14 @@ export class KhoaTuyenSinhService {
       },
     });
   }
+  async get_DSXT(maKhoaTuyenSinh: number) {
+    return await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_nguyen_vong, thong_tin_ca_nhan WHERE danh_sach_nguyen_vong.maKhoaTuyenSinh = ${maKhoaTuyenSinh} and (danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.soBaoDanh Or danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.cmnd and  thong_tin_ca_nhan.cmnd is not null) and  thong_tin_ca_nhan.maKhoaTuyenSinh = (select maKhoaTuyenSinh from dot_tuyen_sinh where maKhoaTuyenSinh = ${maKhoaTuyenSinh})`;
+  }
+  async get_DSTT(maKhoaTuyenSinh: number) {
+    return await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_trung_tuyen inner join danh_sach_nguyen_vong on danh_sach_trung_tuyen.sobaoDanh = danh_sach_nguyen_vong.sobaoDanh and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh and danh_sach_trung_tuyen.nguyenVongTrungTuyen = danh_sach_nguyen_vong.nguyenVong 
+    inner join thong_tin_ca_nhan on (danh_sach_trung_tuyen.sobaoDanh = thong_tin_ca_nhan.sobaoDanh or danh_sach_trung_tuyen.sobaoDanh = thong_tin_ca_nhan.sobaoDanh ) and danh_sach_trung_tuyen.maKhoaTuyenSinh = ${maKhoaTuyenSinh} and thong_tin_ca_nhan.maKhoaTuyenSinh = (select maKhoaTuyenSinh from dot_tuyen_sinh where maKhoaTuyenSinh = ${maKhoaTuyenSinh})`;
+    // , thong_tin_ca_nhan WHERE danh_sach_trung_tuyen.maDotTuyenSinh = ${maDotTuyenSinh} and (danh_sach_trung_tuyen.soBaoDanh = thong_tin_ca_nhan.soBaoDanh Or danh_sach_trung_tuyen.soBaoDanh = thong_tin_ca_nhan.cmnd)`;
+  }
 
   update(updateKhoaTuyenSinhDto: UpdateKhoaTuyenSinhDto) {
     // console.log('updateKhoaTuyenSinhDto :>> ', updateKhoaTuyenSinhDto);

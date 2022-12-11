@@ -59,6 +59,13 @@ export class WishListService {
     }
     return result;
   }
+  kiemTraSlotCuoiCung(danh_sach_trung_tuyen, wish) {
+    let len = danh_sach_trung_tuyen[wish.maNganh]?.length || 0;
+    if (!danh_sach_trung_tuyen[wish.maNganh] || len <= 0) return false;
+    const last_wish = danh_sach_trung_tuyen[wish.maNganh][len - 1];
+    return wish['tongDiem'] == last_wish['tongDiem'] && wish['nguyenVong'] == last_wish['nguyenVong'];
+
+  }
   kiemTraChiTieu(chiTieuNganh, wish) {
     // let tit = wish['maNganh'] + '-chitieutohop';
     // if (!chiTieuNganh[tit]) {
@@ -127,7 +134,7 @@ export class WishListService {
           // if(dsTrungTuyen[wish.soBaoDanh] == "IS_SELECTED")  
           //   break;
           // check nếu còn slot ngành này, === người ngày ở NV này đã trúng tuyển
-          if (dsTrungTuyenTamThoi[wish.maNganh] && chiTieuNganh[wish.maNganh] > dsTrungTuyenTamThoi[wish.maNganh].length && this.kiemTraChiTieu(chiTieuNganh, wish)) { // còn slot
+          if (dsTrungTuyenTamThoi[wish.maNganh] && (chiTieuNganh[wish.maNganh] > dsTrungTuyenTamThoi[wish.maNganh].length || this.kiemTraSlotCuoiCung(dsTrungTuyenTamThoi, wish)) && this.kiemTraChiTieu(chiTieuNganh, wish)) { // còn slot
             // if (this.kiemTraChiTieu(chiTieuNganh, wish) == "True-2") {
             //   chiTieuNganh[wish.maNganh + '-chitieutohop'] -= 1;
             // }
@@ -228,7 +235,108 @@ export class WishListService {
     }
   }
 
+  huyenKute_refilter(wishListOfAll: Object, danh_sach_diem_chuan: Object) {
+    // const ds_dieukien  = ["tongDiem", "nguyenVong"];
+    // const mota_dieukien = { tongDiem: "DESC", nguyenVong: "ASC" };
+    const dsTrungTuyen = {};
+    const dsNVTrungTuyen = {};
+    const dsTrungTuyenTamThoi = {};
+    Object.keys(danh_sach_diem_chuan).forEach((key) => {
+      if (key.includes('chitieutohop'))
+        return;
+      // dsTrungTuyen[key] = [];
+      dsTrungTuyenTamThoi[key] = [];
+    });
+    // Sau Khi reduce ở hàm groupBy(...) thì đây vẫn đang là list của list ~ mảng 2 chiều, flat() để làm phẳng mảng
+    // const listWishValues = Object.values(wishListOfAll).flat()//.map(({ soBaoDanh, tongDiem}) => ({ soBaoDanh, tongDiem }));
+    const listWishValues = Object.values(wishListOfAll)//.map((item) => {return item.sort((a, b) => this.compareByDieuKien([a], [b], ds_dieukien, mota_dieukien))});
+    // Sắp xếp theo [điều kiện] giảm dần, ở đây điều kiện mặc định là tổng điểm, sau khi cơ cấu điều kiện ưu tiên thì sẽ sort theo điều kiện ưu tiên 
+    // Ví dụ như 2 đứa bằng điểm thì sẽ xét điều kiện ưu tiên tiếp theo, có thể là thứ tự nguyện vọng chẳng hạn.
+    // gửi cấu hình điều kiện ưu tiên thì gửi kèm theo 1 object có cấu trúc như sau:
+    // {
+    //   "tongDiem": "desc",
+    //   "nguyenVong": "asc"
+    // } 
+    // let sortedCandidates = listWishValues.sort(function compare(a: any, b: any) { return 1.0 * (b.tongDiem - a.tongDiem) });
+    let sortedCandidates = listWishValues//.sort((aArray, bArray) => this.compareByDieuKien(aArray, bArray, ds_dieukien, mota_dieukien));
+    let time = 0;
+    // return wishListOfAll;
+    // return sortedCandidates;
+    // while (sortedCandidates.length > 0 && this.checkChiTieu(chiTieuNganh)) {
+    // time++;
+    for (let i = 0; i < sortedCandidates.length; i++) {
 
+      let candidateWishList = sortedCandidates[i];
+      // let candidateWishList = wishListOfAll[candidate.combinedKey];
+      let candidatePriorityWish = null;
+      // xét xem còn slot k, bỏ các nguyện vọng đã hết slot
+      // note : dsach này đã sỏt theo NV rồi, nên chỉ cần có NV đầu tiên đậu là đc
+      while (candidateWishList.length > 0) {
+        let wish = candidateWishList.shift(); // lấy wish đầu hàng
+        // if(dsTrungTuyen[wish.soBaoDanh] == "IS_SELECTED")  
+        //   break;
+        // check nếu còn slot ngành này, === người ngày ở NV này đã trúng tuyển
+        if (dsTrungTuyenTamThoi[wish.maNganh] && (danh_sach_diem_chuan[wish.maNganh] <= wish['tongDiem'])) { // còn slot
+          // if (this.kiemTraChiTieu(chiTieuNganh, wish) == "True-2") {
+          //   chiTieuNganh[wish.maNganh + '-chitieutohop'] -= 1;
+          // }
+          candidatePriorityWish = wish;
+          break;
+        }
+        // hết slot
+        // wishListOfAll[candidate.soBaoDanh] = candidateWishList; // bỏ
+      }
+      // còn nguyện vọng ko?
+      // sortedCandidates = sortedCandidates.filter((item, i) => item.length > 0);
+
+      if (candidatePriorityWish == null) {  // tạch hết rồi, cút thôi
+        continue;
+      }
+      // ngươid này đã từng đậu ngành nào chưa, đậu NV nào?
+      if (dsNVTrungTuyen[candidatePriorityWish.soBaoDanh]) {
+        // đã từng đậu ngành này rồi
+        // kiểm tra xem nguyện vọng này có cao hơn nguyện vọng trước đó ko?
+        if (candidatePriorityWish.nguyenVong < dsNVTrungTuyen[candidatePriorityWish.soBaoDanh].nguyenVong) {
+          // xóa người này đậu bất kì ngành nào trước đó
+          //console.log('candidatePriorityWish.soBaoDanh :>> ', dsNVTrungTuyen[candidatePriorityWish.soBaoDanh]);
+          const item = dsNVTrungTuyen[candidatePriorityWish.soBaoDanh];
+          // dsNVTrungTuyen[candidatePriorityWish.soBaoDanh].forEach((item) => {
+          dsTrungTuyenTamThoi[item.maNganh] = dsTrungTuyenTamThoi[item.maNganh].filter((item) => item.soBaoDanh != candidatePriorityWish.soBaoDanh);
+          // });
+          // dsTrungTuyenTamThoi[dsNVTrungTuyen[candidatePriorityWish.soBaoDanh].maNganh] = dsTrungTuyenTamThoi[dsNVTrungTuyen[candidatePriorityWish.soBaoDanh].maNganh].filter((item) => item.soBaoDanh != candidatePriorityWish.soBaoDanh);
+          // thêm người này vào ngành này
+          dsTrungTuyenTamThoi[candidatePriorityWish.maNganh].push(candidatePriorityWish);
+          // cập nhật lại người đậu ngành này
+          dsNVTrungTuyen[candidatePriorityWish.soBaoDanh] = candidatePriorityWish;
+        }
+      } // chưa từng đậu ngành nao
+      else if (dsTrungTuyen[candidatePriorityWish.soBaoDanh] != "IS_SELECTED") {
+        dsTrungTuyenTamThoi[candidatePriorityWish.maNganh].push(candidatePriorityWish); // lấy người này vào ngành này
+        dsTrungTuyen[candidatePriorityWish.soBaoDanh] = "IS_SELECTED";
+        dsNVTrungTuyen[candidatePriorityWish.soBaoDanh] = candidatePriorityWish;
+      }
+
+    }
+    // let breakNow = true;
+    // for (let key in dsTrungTuyenTamThoi) {
+    //   if (dsTrungTuyenTamThoi[key].length > 0) {
+    //     breakNow = false;
+    //     let candidate = dsTrungTuyenTamThoi[key].shift(); // lấy thí sinh trúng tuyển cao nhất ở ngành này ra, vì người này chăc chắn đã đậu, nên nguyện vọng phí sau vô nghĩa
+    //     dsTrungTuyen[key].push(candidate); // cho vào ds trúng tuyển của ngành
+    //     dsTrungTuyenTamThoi[key] = []; // reset ds trúng tuyển để duyệt lại vì những đứa phía sau có thể bị thay thế
+    //     chiTieuNganh[key]--;
+    //     sortedCandidates.filter((element) => element.soBaoDanh != candidate.soBaoDanh);
+    //   }
+    // }
+    // console.log('sortedCandidates.length :>> ', sortedCandidates.length);
+    // if (breakNow) {
+    //   break;
+    // }
+    // }
+
+    // console.log('dsTrungTuyen :>> ', dsTrungTuyen);
+    return dsTrungTuyenTamThoi;
+  }
 
   // THIS PROJECT'S CORE FUNCTION
   receiveAndFilter(file, props) {

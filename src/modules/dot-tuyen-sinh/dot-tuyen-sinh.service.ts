@@ -33,7 +33,70 @@ export class DotTuyenSinhService {
   findAll() {
     return this.prisma.dot_tuyen_sinh.findMany();
   }
+  async get_danh_sach_diem_chuan(maDotTuyenSinh: number) {
+    return await this.prisma.$queryRaw<any[]>`  select tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh, min(tongDiem) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong 
+    on danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and danh_sach_nguyen_vong.nguyenVong = danh_sach_trung_tuyen.nguyenVongTrungTuyen 
+    and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh   
+    inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh
+    inner join dot_tuyen_sinh on dot_tuyen_sinh.maDotTuyenSinh = danh_sach_trung_tuyen.maDotTuyenSinh
+    inner join khoa_tuyen_sinh as kts on danh_sach_nguyen_vong.maKhoaTuyenSinh = kts.maKhoa
+    where  dot_tuyen_sinh.maDotTuyenSinh = ${maDotTuyenSinh}
+    group by tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh`
+  }
+  async re_filter_danh_sach_trung_tuyen(maDotTuyenSinh: number, maKhoaTuyenSinh: number, danh_sach_diem_chuan: any[]) {
+    await this.prisma.danh_sach_trung_tuyen.deleteMany({
+      where: {
+        maDotTuyenSinh: maDotTuyenSinh
+      }
+    })
+    return await this.prisma.danh_sach_nguyen_vong.findMany({
+      where: {
+        maDotTuyenSinh: maDotTuyenSinh
+      }
+    }).then((wish_list) => {
+      const data = this.wl_service.huyenKute_refilter(this.wl_service.groupBy(wish_list.map((w) => ({ ...w, combinedKey: `${w.soBaoDanh}@${w.maNganh}` })), 'combinedKey'), danh_sach_diem_chuan);
 
+      console.log(' data :>> ', data);
+      return this.prisma.danh_sach_trung_tuyen.createMany({
+        data: Object.values(data).flat().map((d) => ({
+          soBaoDanh: d['soBaoDanh'],
+          maKhoaTuyenSinh: maKhoaTuyenSinh,
+          maDotTuyenSinh: maDotTuyenSinh,
+          nguyenVongTrungTuyen: d['nguyenVong'],
+        })),
+      })
+    })
+
+
+  }
+  async save_danh_sach_diem_chuan(maDotTuyenSinh: number, data: any[]) {
+    await this.prisma.diem_chuan.deleteMany({
+      where: {
+        maDotTuyenSinh: maDotTuyenSinh
+      }
+    })
+    const khoa = await this.prisma.dot_tuyen_sinh.findUnique({
+      where: {
+        maDotTuyenSinh: maDotTuyenSinh
+      },
+      select: {
+        maKhoaTuyenSinh: true
+      }
+    })
+    await this.prisma.diem_chuan.createMany({
+      data: Object.keys(data).map(ki => {
+        return {
+          maDotTuyenSinh: maDotTuyenSinh,
+          maNganh: ki,
+          diemChuan: data[ki],
+        }
+      })
+    }).then(r => {
+      return this.re_filter_danh_sach_trung_tuyen(maDotTuyenSinh, khoa.maKhoaTuyenSinh, data)
+    }).catch(e => {
+      console.log(e);
+    })
+  }
 
   async get_DSXT(maDotTuyenSinh: number) {
     return await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_nguyen_vong, thong_tin_ca_nhan WHERE danh_sach_nguyen_vong.maDotTuyenSinh = ${maDotTuyenSinh} and (danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.soBaoDanh Or danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.cmnd and  thong_tin_ca_nhan.cmnd is not null) and  thong_tin_ca_nhan.maKhoaTuyenSinh = (select maKhoaTuyenSinh from dot_tuyen_sinh where maDotTuyenSinh = ${maDotTuyenSinh})`;
@@ -43,6 +106,8 @@ export class DotTuyenSinhService {
     inner join thong_tin_ca_nhan on (danh_sach_trung_tuyen.sobaoDanh = thong_tin_ca_nhan.sobaoDanh or danh_sach_trung_tuyen.sobaoDanh = thong_tin_ca_nhan.sobaoDanh ) and danh_sach_trung_tuyen.maDotTuyenSinh = ${maDotTuyenSinh} and thong_tin_ca_nhan.maKhoaTuyenSinh = (select maKhoaTuyenSinh from dot_tuyen_sinh where maDotTuyenSinh = ${maDotTuyenSinh})`;
     // , thong_tin_ca_nhan WHERE danh_sach_trung_tuyen.maDotTuyenSinh = ${maDotTuyenSinh} and (danh_sach_trung_tuyen.soBaoDanh = thong_tin_ca_nhan.soBaoDanh Or danh_sach_trung_tuyen.soBaoDanh = thong_tin_ca_nhan.cmnd)`;
   }
+
+
   async getInfo(id: number) {
     return await this.prisma.dot_tuyen_sinh.findUnique({
       where: {
@@ -51,7 +116,8 @@ export class DotTuyenSinhService {
       include: {
         chi_tieu_tuyen_sinh: {
           include: {
-            chi_tieu_to_hop: true
+            chi_tieu_to_hop: true,
+            nganh: true,
           }
         },
         khoa_tuyen_sinh: true,
@@ -169,7 +235,7 @@ export class DotTuyenSinhService {
     });
   }
   // kiểm tra trùng thí sinh
-  // trùng thí sinh là thí sinh có nguyện vọng khác đã đậu đợt tuyển khác nhưng cùng khoá tuyển sinh
+  // trùng thí sinh là thí sinh có nguyện vọng khác và đã xác nhận nhập học đã đậu đợt tuyển khác nhưng cùng khoá tuyển sinh
   async kiemTraTrungThiSinh(wishList, maDotTuyenSinh) {
     const khoa_tuyen_sinh = await this.prisma.dot_tuyen_sinh.findUnique({
       where: {
@@ -183,20 +249,34 @@ export class DotTuyenSinhService {
       return this.prisma.danh_sach_trung_tuyen.findMany({
         where: {
           // maDotTuyenSinh: !maDotTuyenSinh,
-          maKhoaTuyenSinh: khoa_tuyen_sinh.maKhoaTuyenSinh,
+          maKhoaTuyenSinh: khoa_tuyen_sinh.maKhoaTuyenSinh,          
         },
+        include: {
+          danh_sach_nguyen_vong: {
+            select: {
+              cmnd: true,
+              nganh: {
+                select: {
+                  tenNganh: true,
+                }
+              },
+            }
+          }
+
+        }
       }).then((res) => {
         // console.log('res :>> ', res);
         // item là nguyện vọng đợt trước trúng tuyển
         // curr là nguyện vọng đợt hiện tại
         return data.valid.reduce((retu, curr) => {
-          const trung = res.find((item) => {
-            return (item.maDotTuyenSinh < maDotTuyenSinh &&    item.soBaoDanh == curr.soBaoDanh && item.nguyenVongTrungTuyen == curr.nguyenVong || item.soBaoDanh == curr.cmnd && item.nguyenVongTrungTuyen == curr.nguyenVong);
+          const nv_da_nhap_hoc = res.find((item) => {
+            // return (item.maDotTuyenSinh < maDotTuyenSinh &&    item.soBaoDanh == curr.soBaoDanh && item.nguyenVongTrungTuyen <= curr.nguyenVong || item.soBaoDanh == curr.cmnd && item.nguyenVongTrungTuyen <= curr.nguyenVong);
+            return (item.lock && item.soBaoDanh == curr.soBaoDanh || item.soBaoDanh == curr.cmnd || (item.danh_sach_nguyen_vong.cmnd || 'NULL-CMND') == curr.cmnd);
 
 
           });
-          if (trung) {
-            retu['invalid'].push({ soBaoDanh: curr.soBaoDanh, maNganh: curr.maNganh, maToHopXetTuyen: curr.maToHopXetTuyen, reason: 'ĐÃ XÉT NGUYỆN VỌNG NÀY Ở ĐỢT XÉT TUYỂN TRƯỚC' });
+          if (nv_da_nhap_hoc) {
+            retu['invalid'].push({ soBaoDanh: curr.soBaoDanh, maNganh: curr.maNganh, maToHopXetTuyen: curr.maToHopXetTuyen, reason: `Thí sinh đã đậu và xác nhận nhập học ngành ${nv_da_nhap_hoc.danh_sach_nguyen_vong.nganh.tenNganh} ở lần xét tuyển trước đó.` });
           }
           else {
             retu['valid'].push(curr);
@@ -301,6 +381,50 @@ export class DotTuyenSinhService {
       };
     }
   }
+  async receiveFileTuyenThang(id: number, file) {
+    // console.log('file :>> ', file);
+    if (!file) {
+      return { error: 'No sheet named Mini' };
+    }
+    try {
+      const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+      if (!XLSX.utils.sheet_to_json(workbook.Sheets['Mini']))
+        return { error: 'Không có Sheet "Mini", Hãy xem lại yêu cầu định dạng file hoặc sử dụng template' };
+      const wishList = XLSX.utils
+        .sheet_to_json(workbook.Sheets['Mini'])
+        .map((row) => FileUtils.wishRowToObject(row));
+      const headerObject = FileUtils.getWishListHeaderObject(
+        XLSX.utils.sheet_to_json(workbook.Sheets['Mini'])[0],
+      );
+      if (!Object.keys(headerObject).includes('soBaoDanh') || !Object.keys(headerObject).includes('maNganh') || !Object.keys(headerObject).includes('nguyenVong') || !Object.keys(headerObject).includes('dieuKienKhac')) {
+        return { error: 'Không đúng định dạng file, Hệ Thống cần "SỐ BÁO DANH" "MÃ NGÀNH", "NGUYỆN VỌNG" và "ĐIỀU KIỆN KHÁC" ' };
+      }
+      if (wishList.length > 0 && typeof (wishList[0]['soBaoDanh']) != 'string') {
+        return { error: 'Số báo danh phải là chuỗi ký tự' };
+      }
+      // return { error: 'OKKKKK' };;
+
+      await this.kiemTraTrungThiSinh(wishList, id).then(async (res) => {
+        if (res.valid.length > 0) {
+          try {
+            return await this.deleteManyNguyenVongByDotTuyenSinh(id).then(() => {
+              return this.tuyenThangDanhSach(id, res.valid) ? true : { error: 'Error while saving file' };
+            });
+          }
+          catch (e) {
+            console.log('e :>> ', e);
+            return e
+          }
+        }
+      })
+
+    } catch (e) {
+      console.log('e :>> ', e);
+      return {
+        error: 'Error while parsing file',
+      };
+    }
+  }
 
   async deleteManyNguyenVongByDotTuyenSinh(maDotTuyenSinh: number) {
     await Promise.all([
@@ -328,13 +452,20 @@ export class DotTuyenSinhService {
           where: {
             maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
             soBaoDanh: '' + item.soBaoDanh,
+          },
+          include: {
+            danh_sach_nguyen_vong: true
           }
         }).then(r => {
-
+          // console.log('r: :>> ', r:);
+          // console.log('nguyện vọng đợt này là :>> ', item.nguyenVong);
+          // console.log('trùng thí sinh: thí sinh đã đậu 1 đợt trong khoá  :>> ', r);
+          // xét xem, nguyện vọng trước đó có nhỏ hơn nguyện vọng này không
+          // và xét xem nguyện vọng trước đó có xac nhận nhập học chưa
           if (r && r.maDotTuyenSinh <= maDotTuyenSinh && item.nguyenVong < r.nguyenVongTrungTuyen) { // đợt đã đậu xảy ra trước và nguyện vọng của đợt này nhỏ hơn đợt đã đậu
             // Nếu đúng, ta sẽ chuyển nguỵen vọng này vào danh sách trúng tuyển thay cho nguyện vọng cũ
           console.log('nguyện vọng đợt này là :>> ', item.nguyenVong);
-            console.log('trùng thí sinh: thí sinh đã đậu 1 đợt trong khoá  :>> ', r);
+            console.log('trùng thí sinh: thí sinh đã đậu 1 đợt trong khoá, và sẽ bị thay thế  :>> ', r);
             try {
               this.prisma.danh_sach_trung_tuyen.update({
                 where: {
@@ -465,6 +596,68 @@ export class DotTuyenSinhService {
     })
 
   }
+  async createManyTrungTuyenThang(id: number, data) {
+    const khoa = await this.prisma.dot_tuyen_sinh.findUnique({
+      where: {
+        maDotTuyenSinh: id,
+      },
+      select: {
+        maKhoaTuyenSinh: true,
+      },
+    });
+    try {
+      await this.createManyThongThinCaNhan(data, khoa);
+      await this.prisma.danh_sach_nguyen_vong.createMany({
+        data: data.map((item) => {
+          return {
+            maDotTuyenSinh: id,
+            maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
+            soBaoDanh: '' + item.soBaoDanh ? item.soBaoDanh : item.cmnd,
+            cmnd: '' + item.cmnd,
+            maNganh: '' + item.maNganh,
+            dieuKienKhac: item.dieuKienKhac,
+            // maToHopXetTuyen: '' + item.maToHopXetTuyen,
+            tongDiem: null,
+            nguyenVong: Number.parseInt(item.nguyenVong),
+            // tongDiem: (item.tongDiem),
+          };
+        })
+      })
+      await this.prisma.danh_sach_trung_tuyen.createMany({
+        data: data.map((item) => {
+          return {
+            maDotTuyenSinh: id,
+            maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
+            soBaoDanh: '' + item.soBaoDanh ? item.soBaoDanh : item.cmnd,
+            nguyenVongTrungTuyen: Number.parseInt(item.nguyenVong),
+          };
+        })
+      })
+    }
+    catch (e) {
+      console.log('e :>> ', e);
+      return false;
+    }
+
+
+  }
+  tuyenThangDanhSach(maDotTuyenSinh: number, wish_list) {
+
+    const ds_trung_tuyen = wish_list.reduce((res, cur) => {
+      if (!res[cur.soBaoDanh]) {
+        res[cur.soBaoDanh] = cur;
+      }
+      if (res[cur.soBaoDanh].nguyenVong > cur.nguyenVong) {
+        res[cur.soBaoDanh] = cur;
+      }
+      return res;
+    }, {});
+    const data = Object.values(ds_trung_tuyen);
+    return this.createManyTrungTuyenThang(maDotTuyenSinh, data);
+    // console.log('count :>> ',data.length);
+    // console.log('ds_trung_tuyen :>> ', data);
+
+  }
 
   // truyeenf vaof ID dot tuyen sinh và ds nguyện vọng được group theo soBaoDanh@maNganh
   async locDSTrungTuyen(maDotTuyenSinh: number, groupByCombinedKey: Object) {
@@ -542,6 +735,58 @@ export class DotTuyenSinhService {
       })
     }
   }
+  //==================================================================================================
 
+  async uploadFileXacNhanNhapHoc(id: number, file, save: boolean = false) {
+    // console.log('file :>> ', file);
+    if (!file) {
+      return { error: 'No sheet named Mini' };
+    }
+    try {
+      const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+      if (!XLSX.utils.sheet_to_json(workbook.Sheets['Mini']))
+        return { error: 'Không có Sheet "Mini", Hãy xem lại yêu cầu định dạng file hoặc sử dụng template' };
+      const wishList = XLSX.utils
+        .sheet_to_json(workbook.Sheets['Mini'])
+        .map((row) => FileUtils.wishRowToObject(row));
+      const headerObject = FileUtils.getWishListHeaderObject(
+        XLSX.utils.sheet_to_json(workbook.Sheets['Mini'])[0],
+      );
+      if (!Object.keys(headerObject).includes('soBaoDanh')) {
+        return { error: 'Không đúng định dạng file, Hệ Thống cần "SỐ BÁO DANH" ' };
+      }
+      if (wishList.length > 0 && typeof (wishList[0]['soBaoDanh']) != 'string') {
+        return { error: 'dữ liệu cột "SỐ BÁO DANH" phải là chuỗi ký tự' };
+      }
+      // return { error: 'OKKKKK' };;
+      if (save) {
+        this.prisma.danh_sach_trung_tuyen.updateMany({
+          where: {
+            maDotTuyenSinh: id,
+            soBaoDanh: {
+              in: wishList.map((item) => item['soBaoDanh']),
+            },
+          },
+          data: {
+            lock: true,
+          },
+        }).then((r) => {
+          console.log('r :>> ', r);
+        }).catch((e) => {
+          console.log('e :>> ', e);
+        });
+        ;
+      }
+      return {
+        validRows: wishList,
+      };
+
+    } catch (e) {
+      console.log('e :>> ', e);
+      return {
+        error: 'Error while parsing file',
+      };
+    }
+  }
 
 }

@@ -15,6 +15,15 @@ export class KhoaTuyenSinhController {
     console.log('body :>> ', query);
     return this.khoaTuyenSinhService.findAll(query);
   }
+  @Get('dsxt/:id')
+  get_DSXT(@Param('id') id: string) {
+    return this.khoaTuyenSinhService.get_DSXT(Number.parseInt(id));
+  }
+  @Get('dstt/:id')
+  get_DSTT(@Param('id') id: string) {
+    return this.khoaTuyenSinhService.get_DSTT(Number.parseInt(id));
+  }
+
   @Get('/thong-ke')
   thongke(@Query() query) {
     console.log('query :>> ', query);
@@ -32,7 +41,7 @@ export class KhoaTuyenSinhController {
 
   @Patch()
   update(@Body() updateKhoaTuyenSinhDto: UpdateKhoaTuyenSinhDto) {
-    return this.khoaTuyenSinhService.update( updateKhoaTuyenSinhDto);
+    return this.khoaTuyenSinhService.update(updateKhoaTuyenSinhDto);
   }
 
   @Post()

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
+import { ProfileDto } from './dto/ProfileDto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 const bcrypt = require('bcrypt');
@@ -51,6 +52,7 @@ export class UsersService {
         username: true,
         password: true,
         role_id: true,
+        role: true,
         active: true,
         profile: true,
       },
@@ -59,11 +61,30 @@ export class UsersService {
     return (await comparePassword(password, u.password)) ? u : null;
   }
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto, profileDto: ProfileDto) {
+    console.log(' ProfileDt :>> ', profileDto);
     createUserDto.password = await bcrypt.hash(createUserDto.password, 10);
 
     return this.prisma.users.create({
       data: createUserDto,
+    }).then(async (user) => {
+      console.log('user :>> ', user);
+      try {
+        await this.prisma.profile.create({
+          data: {
+            ...profileDto,
+            user_id: user.id,
+            active: true,
+          },
+        }).catch((error) => {
+          console.log('error :>> ', error);
+        })
+      }
+      catch (error) {
+        console.log('error :>> ', error);
+      }
+
+      return user;
     });
   }
   async findAll() {
@@ -99,6 +120,14 @@ export class UsersService {
         id,
       },
       data: updateUserDto,
+    });
+  }
+  updateProfile(id: number, profileDto: ProfileDto) {
+    return this.prisma.profile.update({
+      where: {
+        user_id: id,
+      },
+      data: profileDto,
     });
   }
 

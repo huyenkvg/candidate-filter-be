@@ -40,7 +40,7 @@ model danh_sach_nguyen_vong {
   diemMon2              Float?
   diemMon3              Float?
   tongDiem              Float?
-  dieuKienKhac          Int?
+  dieuKienKhac          String?                 @db.NVarChar(200)
   cmnd                  String?                 @db.NVarChar(50)
   dot_tuyen_sinh        dot_tuyen_sinh          @relation(fields: [maDotTuyenSinh], references: [maDotTuyenSinh], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_dot_tuyen_sinh")
   nganh                 nganh                   @relation(fields: [maNganh], references: [maNganh], onUpdate: NoAction, map: "FK_danh_sach_nguyen_vong_nganh")
@@ -56,6 +56,7 @@ model danh_sach_trung_tuyen {
   soBaoDanh             String                 @db.NVarChar(30)
   nguyenVongTrungTuyen  Int?
   maDotTuyenSinh        Int
+  lock                  Boolean?               @default(false, map: "DF_danh_sach_trung_tuyen_lock")
   danh_sach_nguyen_vong danh_sach_nguyen_vong? @relation(fields: [soBaoDanh, maDotTuyenSinh, nguyenVongTrungTuyen], references: [soBaoDanh, maDotTuyenSinh, nguyenVong], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_danh_sach_nguyen_vong")
   dot_tuyen_sinh        dot_tuyen_sinh         @relation(fields: [maDotTuyenSinh], references: [maDotTuyenSinh], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_dot_tuyen_sinh")
   khoa_tuyen_sinh       khoa_tuyen_sinh        @relation(fields: [maKhoaTuyenSinh], references: [maKhoa], onUpdate: NoAction, map: "FK_danh_sach_trung_tuyen_khoa_tuyen_sinh")
@@ -110,7 +111,7 @@ model profile {
   user_id   Int     @id(map: "PK_profile")
   firstname String? @db.NVarChar(20)
   lastname  String? @db.NVarChar(20)
-  phone     String? @db.NChar(15)
+  phone     String? @db.NVarChar(50)
   active    Boolean @default(true, map: "DF_profile_active")
   users     users   @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "FK_profile_user")
 }
@@ -149,7 +150,7 @@ model thong_tin_ca_nhan {
   danh_sach_nguyen_vong danh_sach_nguyen_vong[]
   danh_sach_trung_tuyen danh_sach_trung_tuyen?
 
-  @@id([maKhoaTuyenSinh, soBaoDanh], map: "PK_thong_tin_ca_nhan")
+  @@id([maKhoaTuyenSinh, soBaoDanh], map: "PK_thong_tin_ca_nhan_1")
   @@unique([maKhoaTuyenSinh, soBaoDanh], map: "IX_thong_tin_ca_nhan")
 }
 
