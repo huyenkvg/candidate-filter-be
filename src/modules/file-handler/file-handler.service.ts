@@ -123,5 +123,46 @@ export class FileHandlerService {
     return 'ok';
   }
 
+  tesst(file) {
+    // console.log('file :>> ', file);
+    if (!file) {
+      return { error: 'No sheet named Mini' };
+    }
+    try {
+      const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+      if (!XLSX.utils.sheet_to_json(workbook.Sheets['Mini']))
+        return { error: 'Không có Sheet "Mini", Hãy đổi tên Sheet cần đọc dữ liệu thành "Mini' };
+      const loc_ao = XLSX.utils
+        .sheet_to_json(workbook.Sheets['Mini'])
+        .map((row) => FileUtils.wishRowToObject(row));
 
+      const dstt = XLSX.utils
+        .sheet_to_json(workbook.Sheets['Mini2'])
+        .map((row) => FileUtils.wishRowToObject(row));
+      // console.log('headerObject :>> ', headerObject);
+      let  valid = 0;
+      let hic = [];
+      loc_ao.forEach((row) => { 
+        if(dstt.find((item)=> (item['nguyenVong'] == row['nguyenVong'] && item['soBaoDanh'] == row['soBaoDanh'] && item['maNganh'] == row['maNganh']))){
+          valid++;
+        }
+        else{
+          hic.push(row);
+        }
+
+      })
+      return {
+        valid,
+        hic
+      };
+
+    } catch (e) {
+      console.log('e :>> ', e);
+      return {
+        error: 'Error while parsing file',
+      };
+    }
+
+
+  }
 }

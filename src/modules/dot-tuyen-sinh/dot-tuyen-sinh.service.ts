@@ -34,7 +34,28 @@ export class DotTuyenSinhService {
     return this.prisma.dot_tuyen_sinh.findMany();
   }
   async get_danh_sach_diem_chuan(maDotTuyenSinh: number) {
-    return await this.prisma.$queryRaw<any[]>`  select tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh, min(tongDiem) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong 
+    return await this.prisma.diem_chuan.findMany({
+      where: {
+        maDotTuyenSinh: maDotTuyenSinh
+      }
+    }).then((r) => {
+      console.log('r :>> ', r);
+      if (r.length > 0 && !r.some(e => e.diemChuan == null || e.diemChuan == undefined || e.diemChuan == '{}'))
+        return r;
+      else {
+
+
+        return this.prisma.$queryRaw<any[]>`select tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh, min(tongDiem) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong 
+        on danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and danh_sach_nguyen_vong.nguyenVong = danh_sach_trung_tuyen.nguyenVongTrungTuyen 
+        and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh   
+        inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh
+        inner join dot_tuyen_sinh on dot_tuyen_sinh.maDotTuyenSinh = danh_sach_trung_tuyen.maDotTuyenSinh
+        inner join khoa_tuyen_sinh as kts on danh_sach_nguyen_vong.maKhoaTuyenSinh = kts.maKhoa
+        where  dot_tuyen_sinh.maDotTuyenSinh = ${maDotTuyenSinh}
+        group by tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh`
+      }
+    }).catch((e) => {
+      return this.prisma.$queryRaw<any[]>`select tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh, min(tongDiem) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong 
     on danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and danh_sach_nguyen_vong.nguyenVong = danh_sach_trung_tuyen.nguyenVongTrungTuyen 
     and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh   
     inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh
@@ -42,13 +63,10 @@ export class DotTuyenSinhService {
     inner join khoa_tuyen_sinh as kts on danh_sach_nguyen_vong.maKhoaTuyenSinh = kts.maKhoa
     where  dot_tuyen_sinh.maDotTuyenSinh = ${maDotTuyenSinh}
     group by tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh`
+    })
   }
   async re_filter_danh_sach_trung_tuyen(maDotTuyenSinh: number, maKhoaTuyenSinh: number, danh_sach_diem_chuan: any[]) {
-    await this.prisma.danh_sach_trung_tuyen.deleteMany({
-      where: {
-        maDotTuyenSinh: maDotTuyenSinh
-      }
-    })
+    await this.prisma.$executeRaw`delete from danh_sach_trung_tuyen where maDotTuyenSinh = ${maDotTuyenSinh}`
     return await this.prisma.danh_sach_nguyen_vong.findMany({
       where: {
         maDotTuyenSinh: maDotTuyenSinh
@@ -56,7 +74,8 @@ export class DotTuyenSinhService {
     }).then((wish_list) => {
       const data = this.wl_service.huyenKute_refilter(this.wl_service.groupBy(wish_list.map((w) => ({ ...w, combinedKey: `${w.soBaoDanh}@${w.maNganh}` })), 'combinedKey'), danh_sach_diem_chuan);
 
-      console.log(' data :>> ', data);
+      // console.log(' data :>> ', data);
+      // console.log('object :>> ', object);
       return this.prisma.danh_sach_trung_tuyen.createMany({
         data: Object.values(data).flat().map((d) => ({
           soBaoDanh: d['soBaoDanh'],
@@ -88,7 +107,7 @@ export class DotTuyenSinhService {
         return {
           maDotTuyenSinh: maDotTuyenSinh,
           maNganh: ki,
-          diemChuan: data[ki],
+          diemChuan: JSON.stringify(data[ki]),
         }
       })
     }).then(r => {
@@ -354,6 +373,7 @@ export class DotTuyenSinhService {
 
             return await this.deleteManyNguyenVongByDotTuyenSinh(id).then(() => {
               // console.log('r_delete :>> ', r_delete);
+              this.prisma.$executeRaw`DELETE FROM diem_chuan WHERE maDotTuyenSinh = ${id}`
               return this.createManyNguyenVong(id, res.valid).then(async r => {
                 // Thêm vào ds nguyện vọng thành công
                   // lọc ds nguyện vọng
@@ -680,6 +700,7 @@ export class DotTuyenSinhService {
         }
       });
       // console.log('count :>> ', count);
+
       console.log('count2 - count trung tt :>> ', count2);
       return this.prisma.$executeRaw`DELETE FROM danh_sach_trung_tuyen WHERE maDotTuyenSinh = ${maDotTuyenSinh}`
         .then(() => {

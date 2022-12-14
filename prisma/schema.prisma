@@ -69,7 +69,7 @@ model danh_sach_trung_tuyen {
 model diem_chuan {
   maNganh        String         @db.NVarChar(30)
   maDotTuyenSinh Int
-  diemChuan      Float?
+  diemChuan      String?        @db.NVarChar(20)
   dot_tuyen_sinh dot_tuyen_sinh @relation(fields: [maDotTuyenSinh], references: [maDotTuyenSinh], onUpdate: NoAction, map: "FK_diem_chuan_dot_tuyen_sinh")
   nganh          nganh          @relation(fields: [maNganh], references: [maNganh], onUpdate: NoAction, map: "FK_diem_chuan_nganh")
 

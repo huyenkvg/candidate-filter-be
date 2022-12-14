@@ -31,6 +31,11 @@ export class FileHandlerController {
     return new StreamableFile(file);
   }
 
+  @Post('hihi')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFile(@UploadedFile() file: Express.Multer.File) {
+    return this.fileHandlerService.tesst( file);
+  }
 
 
 }

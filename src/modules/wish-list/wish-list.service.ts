@@ -13,6 +13,8 @@ export class WishListService {
 
   groupBy(original_wishList, headerName) {
     const wishList = original_wishList.sort((a, b) => a['nguyenVong'] - b['nguyenVong']);
+    if (wishList || wishList.length > 1)
+      console.log('wish_list :>> ', wishList);
     // gom danh sách Nguyện Vọng nhóm theo headerName tuỳ ý, ở đây dùng là sốBáoDanh đối với thí sinh, mãNgành đối với ngành
     const groupedWishList = wishList.reduce((acc, item) => {
       const key = item[headerName];
@@ -41,7 +43,7 @@ export class WishListService {
     let b = b_arr[0];
     // truong hop trung so bao danh
     if (a['soBaoDanh'] == b['soBaoDanh']) {
-      return -(a['nguyenVong'] - b['nguyenVong']);
+      return (a['nguyenVong'] - b['nguyenVong']);
     }
 
 
@@ -235,9 +237,26 @@ export class WishListService {
     }
   }
 
+  kiemTraDiemChuanTrungTuyen(diem_chuan_nganh, wish) {
+    console.log('wish :>> ', wish);
+    console.log('diem_chuan_nganh :>> ', diem_chuan_nganh);
+    try {
+      const diem = Number.parseFloat(diem_chuan_nganh[wish['maToHopXetTuyen']]);
+      const gioi_han = (diem_chuan_nganh['gioi_han_nguyen_vong'] == 'INF' || !diem_chuan_nganh['gioi_han_nguyen_vong']) ? 1000000 : Number.parseInt(diem_chuan_nganh['gioi_han_nguyen_vong'])
+      return ((wish.tongDiem * 100 - diem * 100) >= 0 && wish.nguyenVong <= gioi_han);
+
+    }
+    catch (e) {
+      console.log('e :>> ', e);
+      const diem = Number.parseFloat(diem_chuan_nganh)
+      return (wish.tongDiem >= diem);
+    }
+    return false;
+
+  }
   huyenKute_refilter(wishListOfAll: Object, danh_sach_diem_chuan: Object) {
-    // const ds_dieukien  = ["tongDiem", "nguyenVong"];
-    // const mota_dieukien = { tongDiem: "DESC", nguyenVong: "ASC" };
+    const ds_dieukien = ["tongDiem", "nguyenVong"];
+    const mota_dieukien = { tongDiem: "DESC", nguyenVong: "ASC" };
     const dsTrungTuyen = {};
     const dsNVTrungTuyen = {};
     const dsTrungTuyenTamThoi = {};
@@ -249,7 +268,7 @@ export class WishListService {
     });
     // Sau Khi reduce ở hàm groupBy(...) thì đây vẫn đang là list của list ~ mảng 2 chiều, flat() để làm phẳng mảng
     // const listWishValues = Object.values(wishListOfAll).flat()//.map(({ soBaoDanh, tongDiem}) => ({ soBaoDanh, tongDiem }));
-    const listWishValues = Object.values(wishListOfAll)//.map((item) => {return item.sort((a, b) => this.compareByDieuKien([a], [b], ds_dieukien, mota_dieukien))});
+    const listWishValues = Object.values(wishListOfAll).map((item) => { return item.sort((a, b) => this.compareByDieuKien([a], [b], ds_dieukien, mota_dieukien)) });
     // Sắp xếp theo [điều kiện] giảm dần, ở đây điều kiện mặc định là tổng điểm, sau khi cơ cấu điều kiện ưu tiên thì sẽ sort theo điều kiện ưu tiên 
     // Ví dụ như 2 đứa bằng điểm thì sẽ xét điều kiện ưu tiên tiếp theo, có thể là thứ tự nguyện vọng chẳng hạn.
     // gửi cấu hình điều kiện ưu tiên thì gửi kèm theo 1 object có cấu trúc như sau:
@@ -276,7 +295,7 @@ export class WishListService {
         // if(dsTrungTuyen[wish.soBaoDanh] == "IS_SELECTED")  
         //   break;
         // check nếu còn slot ngành này, === người ngày ở NV này đã trúng tuyển
-        if (dsTrungTuyenTamThoi[wish.maNganh] && (danh_sach_diem_chuan[wish.maNganh] <= wish['tongDiem'])) { // còn slot
+        if (dsTrungTuyenTamThoi[wish.maNganh] && this.kiemTraDiemChuanTrungTuyen(danh_sach_diem_chuan[wish.maNganh], wish)) { // còn slot
           // if (this.kiemTraChiTieu(chiTieuNganh, wish) == "True-2") {
           //   chiTieuNganh[wish.maNganh + '-chitieutohop'] -= 1;
           // }
