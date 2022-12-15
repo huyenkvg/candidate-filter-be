@@ -7,9 +7,12 @@ import { UpdateFileHandlerDto } from './dto/update-file-handler.dto';
 import * as XLSX from 'xlsx';
 import FileUtils from 'src/utils/file-utils';
 import { PrismaClient } from '@prisma/client';
+const path = require('path');
 
+const reader = require('xlsx');
 @Injectable()
 export class FileHandlerService {
+
   prisma = new PrismaClient();
   uploadChiTieu(file) {
     if (!file) {
@@ -164,5 +167,64 @@ export class FileHandlerService {
     }
 
 
+  }
+
+  getFileHIHI() {
+    const filePath = path.join('./templates/test.xlsx');
+    const json = [
+      {
+        id: 1,
+        color: 'red',
+        number: 75
+      },
+      {
+        id: 2,
+        color: 'blue',
+        number: 62
+      },
+      {
+        id: 3,
+        color: 'yellow',
+        number: 93
+      },
+    ];
+
+    let workBook = reader.utils.book_new();
+    const workSheet = reader.utils.json_to_sheet(json);
+    reader.utils.book_append_sheet(workBook, workSheet, `response`);
+    let exportFileName = `template-export.xls`;
+    return reader.writeFile(workBook, filePath, {
+      bookType: 'xlsx',
+      type: 'file'
+    })
+  }
+
+  async getDSTTKhoa(maKhoaTuyenSinh: number) {
+    const filePath = path.join('./templates/export.xlsx');
+    const x =  await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_trung_tuyen inner join thong_tin_ca_nhan on danh_sach_trung_tuyen.soBaoDanh = thong_tin_ca_nhan.soBaoDanh inner join danh_sach_nguyen_vong on (danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh AND nguyenVong = nguyenVongTrungTuyen ) WHERE danh_sach_nguyen_vong.maKhoaTuyenSinh = ${maKhoaTuyenSinh}`.then((json) => {
+      // console.log('json :>> ', json);
+      let workBook = reader.utils.book_new();
+      const workSheet = reader.utils.json_to_sheet(json);
+      reader.utils.book_append_sheet(workBook, workSheet, `Mini`);
+      let exportFileName = `export.xls`;
+      return reader.writeFile(workBook, filePath, {
+        bookType: 'xlsx',
+        type: 'file'
+      })
+    })
+  }
+  async getDSNVKhoa(maKhoaTuyenSinh: number) {
+    const filePath = path.join('./templates/export.xlsx');
+    const x =  await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_nguyen_vong inner join thong_tin_ca_nhan on danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.soBaoDanh  WHERE danh_sach_nguyen_vong.maKhoaTuyenSinh = ${maKhoaTuyenSinh}`.then((json) => {
+      // console.log('json :>> ', json);
+      let workBook = reader.utils.book_new();
+      const workSheet = reader.utils.json_to_sheet(json);
+      reader.utils.book_append_sheet(workBook, workSheet, `Mini`);
+      let exportFileName = `export.xls`;
+      return reader.writeFile(workBook, filePath, {
+        bookType: 'xlsx',
+        type: 'file'
+      })
+    })
   }
 }

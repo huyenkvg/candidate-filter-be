@@ -81,4 +81,9 @@ export class UsersController {
     //console.log('profile req.user :>> ', req.user)
     return this.usersService.findUser(req.user.username);
   }
+  @Post('/forgot-password')
+  async forgot(@Body() req) {
+    console.log('profile req.user :>> ', req)
+    return this.usersService.forgotPassword(req.username);
+  }
 }

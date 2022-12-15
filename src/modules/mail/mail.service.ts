@@ -2,11 +2,11 @@ import configs from '../../configs';
 import * as fs from 'fs';
 
 const emailTemplate = fs.readFileSync('./templates/mail.template').toString();
-import nodemailer from 'nodemailer';
+const nodemailer = require('nodemailer')
 
 export class MailService {
   // create transporter object with smtp server details
-  sendMail = async (
+  public static sendMail = async (
     toEmail,
     subject,
     content = '<h1>Example HTML Message Body</h1>',
@@ -16,16 +16,16 @@ export class MailService {
 
     // send email
     await transporter.sendMail({
-      from: 'NhanTNC',
+      from: 'Huyen-Kute',
       to: toEmail,
       subject: subject,
       html: content,
     });
   };
 
-  generateEmailContent = (fullname: string, assetname: string) => {
+  public static generateEmailContent = (fullname: string, pass: string) => {
     return emailTemplate
       .replace('##FULLNAME##', fullname)
-      .replace('##ASSETNAME##', assetname);
+      .replace('##PASSWORD##', pass);
   };
 }

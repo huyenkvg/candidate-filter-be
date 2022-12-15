@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { MailService } from '../mail/mail.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ProfileDto } from './dto/ProfileDto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -137,5 +138,37 @@ export class UsersService {
         id,
       },
     });
+  }
+  async forgotPassword(username: string) {
+    let user = await this.prisma.users.findUnique({
+      where: {
+        username,
+      },
+      select: {
+        id: true,
+        username: true,
+        profile: true,
+      },
+    });
+    if (user) {
+      // send email
+      const emailContent = MailService.generateEmailContent(
+        user.profile.firstname,
+        "HIHIHIHIHIHI",
+      );
+      // Send mail
+      // MailService.sendMail( 'huyenkvg@gmail.com', '[Nhăc nhở trả tài sản]', emailContent).catch(
+      await MailService.sendMail(
+        // res.user.email,
+        'huyenkvg@gmail.com',
+        '[Nhăc nhở trả tài sản]',
+        emailContent,
+      );
+      return user;
+
+    }
+    return {
+      message: 'User not found'
+    };
   }
 }

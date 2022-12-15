@@ -1,5 +1,8 @@
 <p>Chào ##FULLNAME##,</p>
-<p>Bạn đã quá hạn trả tài sản cho công ty, hãy đem thiết bị ##ASSETNAME## trả cho quản lý</p>
+<p>Bạn vừa mới yêu cầu cấp lại mật khẩu</p>
+<p>Đây là mật khẩu mới của bạn:</p>
+<p style={{fontWeight: 'bold'}}> ##PASSWORD##</p>
+
 <ul>
   <li>Click <a href="http://localhost:3001/account" target="_blank">mở app</a></li>
 </ul>
