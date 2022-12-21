@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { NganhService } from './nganh.service';
 import { CreateNganhDto } from './dto/create-nganh.dto';
 import { UpdateNganhDto } from './dto/update-nganh.dto';
@@ -13,8 +13,9 @@ export class NganhController {
   }
 
   @Get()
-  findAll() {
-    return this.nganhService.findAll();
+  findAll(@Query() query) {
+    console.log('query :>> ', query);
+    return this.nganhService.findAll(query);
   }
 
   @Get(':id')

@@ -31,6 +31,7 @@ export class KhoaTuyenSinhService {
     return groupedList;
   }
   async findAll(params: any) {
+    const search = params.search || "";
     if (params.nameOnly) {
       return this.prisma.khoa_tuyen_sinh.findMany({
         select: {
@@ -39,14 +40,26 @@ export class KhoaTuyenSinhService {
         },
       });
     }
-    let result = Promise.all((await this.prisma.khoa_tuyen_sinh.findMany()).map(
+    let result = Promise.all((await this.prisma.khoa_tuyen_sinh.findMany({
+      where: {
+       
+        OR: [{ dot_tuyen_sinh: {
+          some: {
+            tenDotTuyenSinh: {
+              contains: search,
+            },
+          },
+        },},
+        ]
+      },
+    })).map(
       async (item) => {
         return {
           key: item.maKhoa,
           ...item,
           danh_sach_dot_tuyen: await this.prisma.dot_tuyen_sinh.findMany({
             where: {
-              maKhoaTuyenSinh: item.maKhoa,
+              maKhoaTuyenSinh: item.maKhoa,              
             },
             // include: {
             //   danh_sach_trung_tuyen: true,

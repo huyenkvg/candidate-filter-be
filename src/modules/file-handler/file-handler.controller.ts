@@ -85,6 +85,22 @@ export class FileHandlerController {
       stream.pipe(res);
     });
   }
+  @Get('report-ds-hoso-khoa/:id')
+  async getDSHOSOKhoa(@Res() res: Response, @Param('id') id: number) {
+    this.fileHandlerService.getDSHOSOKhoa(id).then(() => {
+      var buffer = readFileSync('./templates/export.xlsx');
+      // var buffer = this.fileHandlerService.getFileHIHI();
+      const stream = new Readable();
+      stream.push(buffer);
+      stream.push(null);
+
+      res.set({
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Length': buffer.length,
+      });
+      stream.pipe(res);
+    });
+  }
 
 
 }

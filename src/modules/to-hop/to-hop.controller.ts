@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ToHopService } from './to-hop.service';
 import { CreateToHopDto } from './dto/create-to-hop.dto';
 import { UpdateToHopDto } from './dto/update-to-hop.dto';
@@ -13,8 +13,9 @@ export class ToHopController {
   }
 
   @Get()
-  findAll() {
-    return this.toHopService.findAll();
+  findAll(@Query() query) {
+    console.log('query :>> ', query);
+    return this.toHopService.findAll(query);
   }
 
   @Get(':id')

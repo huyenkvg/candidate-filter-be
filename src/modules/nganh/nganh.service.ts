@@ -12,8 +12,23 @@ export class NganhService {
     });
   }
 
-  findAll() {
-    return this.prisma.nganh.findMany();
+  findAll(query) {
+    return this.prisma.nganh.findMany({
+      where: {
+        OR: [
+          {
+            maNganh: {
+              contains: query.search,
+            },
+          },
+          {
+            tenNganh: {
+              contains: query.search,
+            },
+          },
+        ],
+      },
+    });
   }
 
   findOne(id: string) {

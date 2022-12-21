@@ -227,4 +227,18 @@ export class FileHandlerService {
       })
     })
   }
+  async getDSHOSOKhoa(maKhoaTuyenSinh: number) {
+    const filePath = path.join('./templates/export.xlsx');
+    const x = await this.prisma.$queryRaw<any[]>`SELECT * FROM thong_tin_ca_nhan WHERE maKhoaTuyenSinh = ${maKhoaTuyenSinh}`.then((json) => {
+      // console.log('json :>> ', json);
+      let workBook = reader.utils.book_new();
+      const workSheet = reader.utils.json_to_sheet(json);
+      reader.utils.book_append_sheet(workBook, workSheet, `Mini`);
+      let exportFileName = `export.xls`;
+      return reader.writeFile(workBook, filePath, {
+        bookType: 'xlsx',
+        type: 'file'
+      })
+    })
+  }
 }

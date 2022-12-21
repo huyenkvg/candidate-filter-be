@@ -20,8 +20,33 @@ export class ToHopService {
     });
   }
 
-  findAll() {
-    return this.prisma.to_hop_xet_tuyen.findMany();
+  findAll(query) {
+    return this.prisma.to_hop_xet_tuyen.findMany({
+      where: {
+        OR: [
+          {
+            maToHop: {
+              contains: query.search,
+            },
+          },
+          {
+            mon1: {
+              contains: query.search,
+            },
+          },
+          {
+            mon2: {
+              contains: query.search,
+            },
+          },
+          {
+            mon3: {
+              contains: query.search,
+            },
+          },
+        ],
+      },
+    });
   }
 
   findOne(maToHop: string) {

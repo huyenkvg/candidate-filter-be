@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { profile } from 'console';
 import { MailService } from '../mail/mail.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ProfileDto } from './dto/ProfileDto';
@@ -88,7 +89,7 @@ export class UsersService {
       return user;
     });
   }
-  async findAll() {
+  async findAll(query) {
     return await this.prisma.users.findMany({
       select: {
         id: true,
@@ -97,6 +98,35 @@ export class UsersService {
         username: true,
         active: true,
       },
+      where: {
+        OR: [{
+          username: {
+            contains: query.search,
+          },
+        }, {
+          profile: {
+
+            firstname: {
+              contains: query.search,
+            },
+          },
+        }, {
+          profile: {
+            lastname: {
+              contains: query.search,
+              
+            },
+          },
+        }, {
+          profile: {
+            phone: {
+              contains: query.search,
+            },
+          },
+        },
+        ],
+      }
+
     });
   }
 
