@@ -167,4 +167,56 @@ export class KhoaTuyenSinhService {
       danh_sach_diem_chuan: danh_sach_diem_chuan
     }
   }
+  async thongkeTable(params: any) {
+    // let query = `SELECT * FROM khoa_tuyen_sinh`;
+    console.log('params :>> ', params);
+    const data_khoa = await this.prisma.$queryRaw<any[]>`SELECT * FROM khoa_tuyen_sinh WHERE tenKhoa >= ${params.khoa_start} AND tenKhoa <= ${params.khoa_end} order by tenKhoa asc`
+    // const data_khoa = await this.prisma.khoa_tuyen_sinh.findMany()
+    await console.log('data_khoa :>> ', data_khoa);
+    let result = await Promise.all(data_khoa.map(async (item) => {
+      return {
+        key: item.maKhoa,
+        ...item,
+        // danh_sach_dot_tuyen: await this.prisma.dot_tuyen_sinh.findMany({
+        //   where: {
+        //     maKhoaTuyenSinh: item.maKhoa,
+        //   },
+        //   // include: {
+        //   //   danh_sach_trung_tuyen: true,
+        //   // }
+        // }),
+        count_dot_tuyen_sinh: await this.prisma.dot_tuyen_sinh.count({
+          where: {
+            maKhoaTuyenSinh: item.maKhoa,
+          },
+        }),
+        ...await this.prisma.$queryRaw`select count(distinct maNganh) as count_nganh from khoa_tuyen_sinh as kts inner join dot_tuyen_sinh as dts on dts.maKhoaTuyenSinh = kts.maKhoa inner join chi_tieu_tuyen_sinh as ctts on ctts.maDotTuyenSinh = dts.maDotTuyenSinh where kts.maKhoa = ${item.maKhoa}`.then((res) => {return res[0]}),
+        count_nguyen_vong: await this.prisma.danh_sach_nguyen_vong.count({
+          where: {
+            maKhoaTuyenSinh: item.maKhoa,
+          },
+        }),
+        count_nhap_hoc: await this.prisma.danh_sach_trung_tuyen.count({
+          where: {
+            maKhoaTuyenSinh: item.maKhoa,
+            lock: true
+          },
+        }),
+        count_trung_tuyen: await this.prisma.danh_sach_trung_tuyen.count({
+          where: {
+            maKhoaTuyenSinh: item.maKhoa,
+          },
+        }),
+
+      };
+
+    }))
+
+    let pie = await this.prisma.$queryRaw<any[]>`select  tenNganh, sum(chiTieu)  as  chi_tieu_tuyen  from khoa_tuyen_sinh as kts inner join dot_tuyen_sinh as dts on dts.maKhoaTuyenSinh = kts.maKhoa inner join chi_tieu_tuyen_sinh as ctts on ctts.maDotTuyenSinh = dts.maDotTuyenSinh inner join nganh as ng on ctts.maNganh = ng.maNganh 
+      where kts.tenKhoa >= ${params.khoa_start} and kts.tenKhoa <=  ${params.khoa_end}  group by  tenNganh`
+    // let pie = await this.prisma.$queryRaw<any[]>`select  tenKhoa, tenDotTuyenSinh,maNganh, sum(chiTieu)  as  i  from khoa_tuyen_sinh as kts inner join dot_tuyen_sinh as dts on dts.maKhoaTuyenSinh = kts.maKhoa inner join chi_tieu_tuyen_sinh as ctts on ctts.maDotTuyenSinh = dts.maDotTuyenSinh
+    // where kts.tenKhoa >= ${params.khoa_start} and kts.tenKhoa <= ${params.khoa_end} group by tenKhoa, tenDotTuyenSinh, maNganh order by tenKhoa`
+    let danh_sach_diem_chuan = await this.getDiemChuan(params);
+    return result
+  }
 }

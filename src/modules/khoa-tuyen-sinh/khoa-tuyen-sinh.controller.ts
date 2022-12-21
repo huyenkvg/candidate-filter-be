@@ -29,6 +29,11 @@ export class KhoaTuyenSinhController {
     console.log('query :>> ', query);
     return this.khoaTuyenSinhService.thongKe(query);
   }
+  @Get('/thong-ke-data-table')
+  thongkeTable(@Query() query) {
+    console.log('query :>> ', query);
+    return this.khoaTuyenSinhService.thongkeTable(query);
+  }
   @Get('/:id')
   findOne(@Param('id') id: string) {
     console.log('id :>> ', id);
