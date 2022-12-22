@@ -53,6 +53,6 @@ export class NganhService {
       where: {
         maNganh: id,
       },
-    });
+    })
   }
 }

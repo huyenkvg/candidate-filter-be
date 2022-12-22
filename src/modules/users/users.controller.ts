@@ -61,16 +61,23 @@ export class UsersController {
     return this.usersService.findUser(username);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch('update-profile/:id')
-  updateProfile(@Param('id') id: number, @Body() dto: ProfileDto) {
-    return this.usersService.updateProfile(+id, dto);
+  updateProfile(@Param('id') id: number, @Body() dto:any) {
+    const { role_id,...profile } = dto;
+    return this.usersService.updateProfile(+id, profile, role_id);
+
   }
 
+
+  @UseGuards(JwtAuthGuard)
   @Patch('user/:id')
   update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(+id, updateUserDto);
   }
 
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: number) {
     return this.usersService.remove(+id);
@@ -82,6 +89,7 @@ export class UsersController {
     //console.log('profile req.user :>> ', req.user)
     return this.usersService.findUser(req.user.username);
   }
+
   @Post('/forgot-password')
   async forgot(@Body() req) {
     console.log('profile req.user :>> ', req)

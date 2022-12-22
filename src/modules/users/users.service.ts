@@ -58,9 +58,10 @@ export class UsersService {
         active: true,
         profile: true,
       },
-    });
+    })
     // return u;
-    return (await comparePassword(password, u.password)) ? u : null;
+      if(!u) return null;
+      return (await comparePassword(password, u.password)) ? u : null;
   }
 
   async create(createUserDto: CreateUserDto, profileDto: ProfileDto) {
@@ -153,13 +154,32 @@ export class UsersService {
       data: updateUserDto,
     });
   }
-  updateProfile(id: number, profileDto: ProfileDto) {
+  updateProfile(id: number, profileDto: ProfileDto, role_id: number) {
+   
     return this.prisma.profile.update({
       where: {
         user_id: id,
       },
       data: profileDto,
-    });
+    }).then(r => {
+      
+      if (profileDto.active != undefined) {
+       return this.prisma.users.update({
+          where: {
+            id,
+          },
+          select: {
+            profile: true,
+            role: true,
+          },
+          data: {
+            active: profileDto.active,
+            role_id: role_id || 2,
+          },
+        });
+
+      }
+    })
   }
 
   remove(id: number) {

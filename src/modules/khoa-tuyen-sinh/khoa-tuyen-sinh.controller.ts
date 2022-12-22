@@ -44,15 +44,15 @@ export class KhoaTuyenSinhController {
   //   return this.khoaTuyenSinhService.search(str);
   // }
 
+  @Post()
+  create(@Body() createKhoaTuyenSinhDto: CreateKhoaTuyenSinhDto) {
+    return this.khoaTuyenSinhService.create(createKhoaTuyenSinhDto);
+  }
   @Patch()
   update(@Body() updateKhoaTuyenSinhDto: UpdateKhoaTuyenSinhDto) {
     return this.khoaTuyenSinhService.update(updateKhoaTuyenSinhDto);
   }
 
-  @Post()
-  create(@Body() createKhoaTuyenSinhDto: CreateKhoaTuyenSinhDto) {
-    return this.khoaTuyenSinhService.create(createKhoaTuyenSinhDto);
-  }
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.khoaTuyenSinhService.remove(Number.parseInt(id));

@@ -32,6 +32,7 @@ export class KhoaTuyenSinhService {
   }
   async findAll(params: any) {
     const search = params.search || "";
+    const x = -1;
     if (params.nameOnly) {
       return this.prisma.khoa_tuyen_sinh.findMany({
         select: {
@@ -49,6 +50,12 @@ export class KhoaTuyenSinhService {
               contains: search,
             },
           },
+        },
+        },
+          {
+            tenKhoa: {
+              gte: x
+
         },},
         ]
       },
