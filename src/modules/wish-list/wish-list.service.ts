@@ -238,8 +238,8 @@ export class WishListService {
   }
 
   kiemTraDiemChuanTrungTuyen(diem_chuan_nganh, wish) {
-    console.log('wish :>> ', wish);
-    console.log('diem_chuan_nganh :>> ', diem_chuan_nganh);
+    // console.log('wish :>> ', wish);
+    // console.log('diem_chuan_nganh :>> ', diem_chuan_nganh);
     try {
       const diem = Number.parseFloat(diem_chuan_nganh[wish['maToHopXetTuyen']]);
       const gioi_han = (diem_chuan_nganh['gioi_han_nguyen_vong'] == 'INF' || !diem_chuan_nganh['gioi_han_nguyen_vong']) ? 1000000 : Number.parseInt(diem_chuan_nganh['gioi_han_nguyen_vong'])

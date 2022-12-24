@@ -265,37 +265,20 @@ export class DotTuyenSinhService {
       },
     });
     return this.kiemTraNguyenVong(wishList, maDotTuyenSinh).then((data) => {
-      return this.prisma.danh_sach_trung_tuyen.findMany({
-        where: {
-          // maDotTuyenSinh: !maDotTuyenSinh,
-          maKhoaTuyenSinh: khoa_tuyen_sinh.maKhoaTuyenSinh,          
-        },
-        include: {
-          danh_sach_nguyen_vong: {
-            select: {
-              cmnd: true,
-              nganh: {
-                select: {
-                  tenNganh: true,
-                }
-              },
-            }
-          }
-
-        }
-      }).then((res) => {
+      return this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_trung_tuyen inner join danh_sach_nguyen_vong on (danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh ) inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh WHERE danh_sach_trung_tuyen.maKhoaTuyenSinh = ${khoa_tuyen_sinh.maKhoaTuyenSinh} and danh_sach_trung_tuyen.lock = 'true'`.then((res) => {
         // console.log('res :>> ', res);
         // item là nguyện vọng đợt trước trúng tuyển
         // curr là nguyện vọng đợt hiện tại
         return data.valid.reduce((retu, curr) => {
           const nv_da_nhap_hoc = res.find((item) => {
+            // console.log('item :>> ', item);
             // return (item.maDotTuyenSinh < maDotTuyenSinh &&    item.soBaoDanh == curr.soBaoDanh && item.nguyenVongTrungTuyen <= curr.nguyenVong || item.soBaoDanh == curr.cmnd && item.nguyenVongTrungTuyen <= curr.nguyenVong);
-            return (item.lock && item.soBaoDanh == curr.soBaoDanh || item.soBaoDanh == curr.cmnd || (item.danh_sach_nguyen_vong.cmnd || 'NULL-CMND') == curr.cmnd);
+            return (item.lock && item.soBaoDanh == curr.soBaoDanh || item.soBaoDanh == curr.cmnd || (item.cmnd || 'NULL-CMND') == curr.cmnd);
 
 
           });
           if (nv_da_nhap_hoc) {
-            retu['invalid'].push({ soBaoDanh: curr.soBaoDanh, maNganh: curr.maNganh, maToHopXetTuyen: curr.maToHopXetTuyen, reason: `Thí sinh đã đậu và xác nhận nhập học ngành ${nv_da_nhap_hoc.danh_sach_nguyen_vong.nganh.tenNganh} ở lần xét tuyển trước đó.` });
+            retu['invalid'].push({ soBaoDanh: curr.soBaoDanh, maNganh: curr.maNganh, maToHopXetTuyen: curr.maToHopXetTuyen, reason: `Thí sinh đã đậu và xác nhận nhập học ngành ${nv_da_nhap_hoc.tenNganh} ở lần xét tuyển trước đó.` });
           }
           else {
             retu['valid'].push(curr);
