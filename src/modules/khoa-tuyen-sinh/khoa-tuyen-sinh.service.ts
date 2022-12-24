@@ -97,7 +97,7 @@ export class KhoaTuyenSinhService {
     });
   }
   async get_DSXT(maKhoaTuyenSinh: number) {
-    return await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_nguyen_vong, thong_tin_ca_nhan WHERE danh_sach_nguyen_vong.maKhoaTuyenSinh = ${maKhoaTuyenSinh} and (danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.soBaoDanh Or danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.cmnd and  thong_tin_ca_nhan.cmnd is not null) and  thong_tin_ca_nhan.maKhoaTuyenSinh = (select maKhoaTuyenSinh from dot_tuyen_sinh where maKhoaTuyenSinh = ${maKhoaTuyenSinh})`;
+    return await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_nguyen_vong, thong_tin_ca_nhan WHERE thong_tin_ca_nhan.maKhoaTuyenSinh = ${maKhoaTuyenSinh} and (danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.soBaoDanh Or danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.cmnd and  thong_tin_ca_nhan.cmnd is not null) and  thong_tin_ca_nhan.maKhoaTuyenSinh = (select maKhoaTuyenSinh from dot_tuyen_sinh where maKhoaTuyenSinh = ${maKhoaTuyenSinh})`;
   }
   async get_DSTT(maKhoaTuyenSinh: number) {
     return await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_trung_tuyen inner join danh_sach_nguyen_vong on danh_sach_trung_tuyen.sobaoDanh = danh_sach_nguyen_vong.sobaoDanh and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh and danh_sach_trung_tuyen.nguyenVongTrungTuyen = danh_sach_nguyen_vong.nguyenVong 
@@ -129,22 +129,23 @@ export class KhoaTuyenSinhService {
 
   }
  async getDiemChuan(params: any) {
+  // console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa :>> ');
     return await this.prisma.$queryRaw<any[]>`  select tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh, min(tongDiem) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong 
     on danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and danh_sach_nguyen_vong.nguyenVong = danh_sach_trung_tuyen.nguyenVongTrungTuyen 
     and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh   
     inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh
     inner join dot_tuyen_sinh on dot_tuyen_sinh.maDotTuyenSinh = danh_sach_trung_tuyen.maDotTuyenSinh
-    inner join khoa_tuyen_sinh as kts on danh_sach_nguyen_vong.maKhoaTuyenSinh = kts.maKhoa
+    inner join khoa_tuyen_sinh as kts on danh_sach_trung_tuyen.maKhoaTuyenSinh = kts.maKhoa
     where kts.tenKhoa >= ${params.khoa_start} and kts.tenKhoa <=  ${params.khoa_end}
     group by tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh`
   }
 
   async thongKe(params: any) {
     // let query = `SELECT * FROM khoa_tuyen_sinh`;
-    console.log('params :>> ', params);
+    // console.log('params :>> ', params);
     const data_khoa = await this.prisma.$queryRaw<any[]>`SELECT * FROM khoa_tuyen_sinh WHERE tenKhoa >= ${params.khoa_start} AND tenKhoa <= ${params.khoa_end} order by tenKhoa asc`
     // const data_khoa = await this.prisma.khoa_tuyen_sinh.findMany()
-    await console.log('data_khoa :>> ', data_khoa);
+    // await console.log('data_khoa :>> ', data_khoa);
     let result = await Promise.all(data_khoa.map(async (item) => {
         return {
           key: item.maKhoa,

@@ -9,7 +9,7 @@ import { UpdateToHopDto } from './dto/update-to-hop.dto';
 export class ToHopService {
   prisma = new PrismaClient();
   create(createToHopDto: CreateToHopDto) {
-    console.log('createNganhDto.getFormatedStringObject() :>> ',  StringUtils.chuanHoaObjectSring(createToHopDto, true));
+    // console.log('createNganhDto.getFormatedStringObject() :>> ',  StringUtils.chuanHoaObjectSring(createToHopDto, true));
     return this.prisma.to_hop_xet_tuyen.create({
       data: {
         maToHop: StringUtils.chuanHoaChuoiHoa(createToHopDto.maToHop),

@@ -15,7 +15,7 @@ export class ThongTinCaNhanService {
 
   findAll(params) {
     if (params) {
-      const { maKhoaTuyenSinh, info } = params;
+      let { maKhoaTuyenSinh, info } = params;
       if (maKhoaTuyenSinh == 'all') {
         return this.prisma.thong_tin_ca_nhan.findMany({
           where: {

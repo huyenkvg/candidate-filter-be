@@ -31,7 +31,7 @@ export class FileHandlerService {
       const headerObject = FileUtils.getWishListHeaderObject(
         XLSX.utils.sheet_to_json(workbook.Sheets['Mini'])[0],
       );
-      console.log('headerObject :>> ', headerObject);
+      // console.log('headerObject :>> ', headerObject);
       // if (!Object.keys(headerObject).includes('maNganh') || !Object.keys(headerObject).includes('tenNganh') || !Object.keys(headerObject).includes('diemSan') || !Object.keys(headerObject).includes('chiTieubanDau')) {
       //   return { error: 'Không đúng định dạng file, Hãy xem lại các trường dữ liệu bắt buộc có hoặc sử dụng template' };
       // }
@@ -80,7 +80,7 @@ export class FileHandlerService {
       const headerObject = FileUtils.getWishListHeaderObject(
         XLSX.utils.sheet_to_json(workbook.Sheets['Mini'])[0],
       );
-      console.log('headerObject :>> ', headerObject);
+      // console.log('headerObject :>> ', headerObject);
       // if (!Object.keys(headerObject).includes('maNganh') || !Object.keys(headerObject).includes('tenNganh') || !Object.keys(headerObject).includes('diemSan') || !Object.keys(headerObject).includes('chiTieubanDau')) {
       //   return { error: 'Không đúng định dạng file, Hãy xem lại các trường dữ liệu bắt buộc có hoặc sử dụng template' };
       // }
@@ -105,7 +105,7 @@ export class FileHandlerService {
               chiTieu: null,
             }))
           ).flat();
-          console.log('chiTieuToHop :>> ', chiTieuToHop);
+          // console.log('chiTieuToHop :>> ', chiTieuToHop);
           return this.prisma.chi_tieu_to_hop.createMany({
             data: chiTieuToHop,
           });
@@ -136,11 +136,11 @@ export class FileHandlerService {
       if (!XLSX.utils.sheet_to_json(workbook.Sheets['Mini']))
         return { error: 'Không có Sheet "Mini", Hãy đổi tên Sheet cần đọc dữ liệu thành "Mini' };
       const loc_ao = XLSX.utils
-        .sheet_to_json(workbook.Sheets['Mini'])
+        .sheet_to_json(workbook.Sheets['Mini2'])
         .map((row) => FileUtils.wishRowToObject(row));
 
       const dstt = XLSX.utils
-        .sheet_to_json(workbook.Sheets['Mini2'])
+        .sheet_to_json(workbook.Sheets['Mini'])
         .map((row) => FileUtils.wishRowToObject(row));
       // console.log('headerObject :>> ', headerObject);
       let  valid = 0;
@@ -201,11 +201,37 @@ export class FileHandlerService {
 
   async getDSTTKhoa(maKhoaTuyenSinh: number) {
     const filePath = path.join('./templates/export.xlsx');
-    const x =  await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_trung_tuyen inner join thong_tin_ca_nhan on danh_sach_trung_tuyen.soBaoDanh = thong_tin_ca_nhan.soBaoDanh inner join danh_sach_nguyen_vong on (danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh AND nguyenVong = nguyenVongTrungTuyen ) WHERE danh_sach_nguyen_vong.maKhoaTuyenSinh = ${maKhoaTuyenSinh}`.then((json) => {
+    const diem_chuan_nganh = await this.prisma.$queryRaw<any[]>`select tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh, count(danh_sach_trung_tuyen.soBaoDanh) as so_luong_trung_tuyen, ROUND(min(tongDiem),2) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong 
+    on danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and danh_sach_nguyen_vong.nguyenVong = danh_sach_trung_tuyen.nguyenVongTrungTuyen 
+    and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh   
+    inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh
+    inner join dot_tuyen_sinh on dot_tuyen_sinh.maDotTuyenSinh = danh_sach_trung_tuyen.maDotTuyenSinh
+    inner join khoa_tuyen_sinh as kts on danh_sach_trung_tuyen.maKhoaTuyenSinh = kts.maKhoa
+    where  dot_tuyen_sinh.maDotTuyenSinh = ${maKhoaTuyenSinh}
+    group by tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh`;
+
+    const count_by_nganh = await this.prisma.$queryRaw<any[]>`SELECT count (*) as so_luong_trung_tuyen, dsnv.maNganh, dsnv.tenNganh  FROM 
+    (select * from danh_sach_trung_tuyen where maKhoaTuyenSinh = ${maKhoaTuyenSinh}) a
+    inner join (select * from thong_tin_ca_nhan  where maKhoaTuyenSinh = ${maKhoaTuyenSinh}) b
+    on a.soBaoDanh = b.soBaoDanh
+    left join (select soBaoDanh, maDotTuyenSinh, nguyenVong,  nganh.maNganh, tenNganh  from danh_sach_nguyen_vong left join nganh on danh_sach_nguyen_vong.maNganh =nganh.maNganh) dsnv  
+    on dsnv.soBaoDanh = a.soBaoDanh and dsnv.nguyenVong = a.nguyenVongTrungTuyen and a.maDotTuyenSinh = dsnv.maDotTuyenSinh
+    group by maNganh, dsnv.tenNganh`
+
+    await this.prisma.$queryRaw<any[]>`SELECT * FROM 
+    (select * from danh_sach_trung_tuyen where maKhoaTuyenSinh = ${maKhoaTuyenSinh}) a
+    inner join (select * from thong_tin_ca_nhan  where maKhoaTuyenSinh = ${maKhoaTuyenSinh}) b
+    on a.soBaoDanh = b.soBaoDanh
+    left join danh_sach_nguyen_vong on danh_sach_nguyen_vong.soBaoDanh = a.soBaoDanh and nguyenVong = a.nguyenVongTrungTuyen and a.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh
+    `.then((json) => {
       // console.log('json :>> ', json);
       let workBook = reader.utils.book_new();
       const workSheet = reader.utils.json_to_sheet(json);
+      const workSheet2 = reader.utils.json_to_sheet(count_by_nganh);
+      const workSheet3 = reader.utils.json_to_sheet(diem_chuan_nganh);
       reader.utils.book_append_sheet(workBook, workSheet, `Mini`);
+      reader.utils.book_append_sheet(workBook, workSheet2, `count_by_nganh`);
+      // reader.utils.book_append_sheet(workBook, workSheet3, `diem_chuan_nganh`);
       let exportFileName = `export.xls`;
       return reader.writeFile(workBook, filePath, {
         bookType: 'xlsx',
@@ -215,7 +241,7 @@ export class FileHandlerService {
   }
   async getDSNVKhoa(maKhoaTuyenSinh: number) {
     const filePath = path.join('./templates/export.xlsx');
-    const x =  await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_nguyen_vong inner join thong_tin_ca_nhan on danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.soBaoDanh  WHERE danh_sach_nguyen_vong.maKhoaTuyenSinh = ${maKhoaTuyenSinh}`.then((json) => {
+    const x = await this.prisma.$queryRaw<any[]>`SELECT * FROM danh_sach_nguyen_vong inner join thong_tin_ca_nhan on danh_sach_nguyen_vong.soBaoDanh = thong_tin_ca_nhan.soBaoDanh  WHERE thong_tin_ca_nhan.maKhoaTuyenSinh = ${maKhoaTuyenSinh}`.then((json) => {
       // console.log('json :>> ', json);
       let workBook = reader.utils.book_new();
       const workSheet = reader.utils.json_to_sheet(json);

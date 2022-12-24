@@ -12,9 +12,9 @@ export class WishListService {
   }
 
   groupBy(original_wishList, headerName) {
-    const wishList = original_wishList.sort((a, b) => a['nguyenVong'] - b['nguyenVong']);
-    if (wishList || wishList.length > 1)
-      console.log('wish_list :>> ', wishList);
+    const wishList = original_wishList.sort((a, b) => Number.parseInt(a['nguyenVong']) - Number.parseInt(b['nguyenVong']));
+    // if (wishList || wishList.length > 1)
+    //   console.log('wish_list :>> ', wishList);
     // gom danh sách Nguyện Vọng nhóm theo headerName tuỳ ý, ở đây dùng là sốBáoDanh đối với thí sinh, mãNgành đối với ngành
     const groupedWishList = wishList.reduce((acc, item) => {
       const key = item[headerName];
@@ -43,7 +43,7 @@ export class WishListService {
     let b = b_arr[0];
     // truong hop trung so bao danh
     if (a['soBaoDanh'] == b['soBaoDanh']) {
-      return (a['nguyenVong'] - b['nguyenVong']);
+      return (Number.parseInt(a['nguyenVong']) - Number.parseInt(b['nguyenVong']));
     }
 
 
@@ -51,7 +51,10 @@ export class WishListService {
     let result = 0;
     for (let i = 0; i < ds_dieukien.length; i++) {
       let opposite = mota_dieukien[ds_dieukien[i]] == 'ASC' ? 1 : -1; 
-      if (a[ds_dieukien[i]] > b[ds_dieukien[i]]) {
+      const a_value = Number.parseFloat(a[ds_dieukien[i]]) * 1000;
+      const b_value = Number.parseFloat(b[ds_dieukien[i]]) * 1000;
+
+      if (a_value - b_value > 0) {
         result = 1*opposite;
         break;
       } else if (a[ds_dieukien[i]] < b[ds_dieukien[i]]) {
@@ -62,10 +65,15 @@ export class WishListService {
     return result;
   }
   kiemTraSlotCuoiCung(danh_sach_trung_tuyen, wish) {
+
     let len = danh_sach_trung_tuyen[wish.maNganh]?.length || 0;
     if (!danh_sach_trung_tuyen[wish.maNganh] || len <= 0) return false;
     const last_wish = danh_sach_trung_tuyen[wish.maNganh][len - 1];
-    return wish['tongDiem'] == last_wish['tongDiem'] && wish['nguyenVong'] == last_wish['nguyenVong'];
+    if (wish['soBaoDanh'] == '02007406') {
+      console.log('wish :>> ', wish);
+      console.log('last_wish :>> ', last_wish);
+    }
+    return Number.parseFloat(wish['tongDiem']) * 1000 == Number.parseFloat(last_wish['tongDiem']) * 1000 && Number.parseInt(wish['nguyenVong']) == Number.parseInt(last_wish['nguyenVong']);
 
   }
   kiemTraChiTieu(chiTieuNganh, wish) {
@@ -109,7 +117,7 @@ export class WishListService {
     });
     // Sau Khi reduce ở hàm groupBy(...) thì đây vẫn đang là list của list ~ mảng 2 chiều, flat() để làm phẳng mảng
     // const listWishValues = Object.values(wishListOfAll).flat()//.map(({ soBaoDanh, tongDiem}) => ({ soBaoDanh, tongDiem }));
-    const listWishValues = Object.values(wishListOfAll)//.map((item) => {return item.sort((a, b) => this.compareByDieuKien([a], [b], ds_dieukien, mota_dieukien))});
+    const listWishValues = Object.values(wishListOfAll).map((item) => { return item.sort((a, b) => this.compareByDieuKien([a], [b], ds_dieukien, mota_dieukien)) });
     // Sắp xếp theo [điều kiện] giảm dần, ở đây điều kiện mặc định là tổng điểm, sau khi cơ cấu điều kiện ưu tiên thì sẽ sort theo điều kiện ưu tiên 
     // Ví dụ như 2 đứa bằng điểm thì sẽ xét điều kiện ưu tiên tiếp theo, có thể là thứ tự nguyện vọng chẳng hạn.
     // gửi cấu hình điều kiện ưu tiên thì gửi kèm theo 1 object có cấu trúc như sau:
@@ -136,7 +144,17 @@ export class WishListService {
           // if(dsTrungTuyen[wish.soBaoDanh] == "IS_SELECTED")  
           //   break;
           // check nếu còn slot ngành này, === người ngày ở NV này đã trúng tuyển
+          if (wish['soBaoDanh'] == '02007406') {
+            console.log('wNOOOO ahhhhhh :>> ', wish);
+            console.log('chiTieuNganh[wish.maNganh]:>> ', chiTieuNganh[wish.maNganh]);
+            console.log('dsTrungTuyenTamThoi[wish.maNganh]:>> ', dsTrungTuyenTamThoi[wish.maNganh].length);
+            console.log('kiemtra slot :>> ', this.kiemTraSlotCuoiCung(dsTrungTuyenTamThoi, wish));
+            console.log('ok ---- :>> ', (chiTieuNganh[wish.maNganh] > dsTrungTuyenTamThoi[wish.maNganh].length && this.kiemTraChiTieu(chiTieuNganh, wish)));
+          }
           if (dsTrungTuyenTamThoi[wish.maNganh] && (chiTieuNganh[wish.maNganh] > dsTrungTuyenTamThoi[wish.maNganh].length || this.kiemTraSlotCuoiCung(dsTrungTuyenTamThoi, wish)) && this.kiemTraChiTieu(chiTieuNganh, wish)) { // còn slot
+            if (wish['soBaoDanh'] == '02007406') {
+              console.log('wish ahhhhhh :>> ', 'okkkayyyyy');
+            }
             // if (this.kiemTraChiTieu(chiTieuNganh, wish) == "True-2") {
             //   chiTieuNganh[wish.maNganh + '-chitieutohop'] -= 1;
             // }
@@ -243,7 +261,7 @@ export class WishListService {
     try {
       const diem = Number.parseFloat(diem_chuan_nganh[wish['maToHopXetTuyen']]);
       const gioi_han = (diem_chuan_nganh['gioi_han_nguyen_vong'] == 'INF' || !diem_chuan_nganh['gioi_han_nguyen_vong']) ? 1000000 : Number.parseInt(diem_chuan_nganh['gioi_han_nguyen_vong'])
-      return ((wish.tongDiem * 100 - diem * 100) >= 0 && wish.nguyenVong <= gioi_han);
+      return ((wish.tongDiem * 1000 - diem * 1000) > 0 || ((wish.tongDiem * 1000 - diem * 1000) == 0 && wish.nguyenVong <= gioi_han));
 
     }
     catch (e) {

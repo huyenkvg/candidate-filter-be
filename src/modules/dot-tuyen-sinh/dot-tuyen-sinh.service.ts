@@ -34,36 +34,51 @@ export class DotTuyenSinhService {
     return this.prisma.dot_tuyen_sinh.findMany();
   }
   async get_danh_sach_diem_chuan(maDotTuyenSinh: number) {
-    return await this.prisma.diem_chuan.findMany({
-      where: {
-        maDotTuyenSinh: maDotTuyenSinh
-      }
-    }).then((r) => {
-      console.log('r :>> ', r);
-      if (r.length > 0 && !r.some(e => e.diemChuan == null || e.diemChuan == undefined || e.diemChuan == '{}'))
-        return r;
-      else {
-
-
-        return this.prisma.$queryRaw<any[]>`select tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh, min(tongDiem) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong 
-        on danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and danh_sach_nguyen_vong.nguyenVong = danh_sach_trung_tuyen.nguyenVongTrungTuyen 
-        and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh   
-        inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh
-        inner join dot_tuyen_sinh on dot_tuyen_sinh.maDotTuyenSinh = danh_sach_trung_tuyen.maDotTuyenSinh
-        inner join khoa_tuyen_sinh as kts on danh_sach_nguyen_vong.maKhoaTuyenSinh = kts.maKhoa
-        where  dot_tuyen_sinh.maDotTuyenSinh = ${maDotTuyenSinh}
-        group by tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh`
-      }
-    }).catch((e) => {
-      return this.prisma.$queryRaw<any[]>`select tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh, min(tongDiem) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong 
-    on danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and danh_sach_nguyen_vong.nguyenVong = danh_sach_trung_tuyen.nguyenVongTrungTuyen 
-    and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh   
-    inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh
-    inner join dot_tuyen_sinh on dot_tuyen_sinh.maDotTuyenSinh = danh_sach_trung_tuyen.maDotTuyenSinh
-    inner join khoa_tuyen_sinh as kts on danh_sach_nguyen_vong.maKhoaTuyenSinh = kts.maKhoa
-    where  dot_tuyen_sinh.maDotTuyenSinh = ${maDotTuyenSinh}
-    group by tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh`
+    return this.prisma.$queryRaw<any[]>`select tenKhoa, tenDotTuyenSinh,danh_sach_nguyen_vong.maDotTuyenSinh, nganh.maNganh, tenNganh, count(danh_sach_trung_tuyen.soBaoDanh) as so_luong_trung_tuyen, 
+    ROUND(min(tongDiem),2) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong 
+            on danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and danh_sach_nguyen_vong.nguyenVong = danh_sach_trung_tuyen.nguyenVongTrungTuyen 
+            and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh   
+            inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh
+            inner join dot_tuyen_sinh on dot_tuyen_sinh.maDotTuyenSinh = danh_sach_trung_tuyen.maDotTuyenSinh
+            inner join khoa_tuyen_sinh as kts on danh_sach_trung_tuyen.maKhoaTuyenSinh = kts.maKhoa
+            where  dot_tuyen_sinh.maDotTuyenSinh =  ${maDotTuyenSinh}
+            group by tenKhoa, tenDotTuyenSinh,danh_sach_nguyen_vong.maDotTuyenSinh, nganh.maNganh, tenNganh `.then(async res => {
+              return await Promise.all(res.map(async x => ({
+                ...x,
+                gioi_han_nguyen_vong: await this.prisma.$queryRaw`select  max(nguyenVongTrungTuyen) as gioi_han_nguyen_vong from danh_sach_nguyen_vong inner join  danh_sach_trung_tuyen
+                on  danh_sach_trung_tuyen.nguyenVongTrungTuyen = danh_sach_nguyen_vong.nguyenVong  and  danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and  danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh 
+                where  danh_sach_trung_tuyen.maDotTuyenSinh =  ${x.maDotTuyenSinh} and danh_sach_nguyen_vong.maNganh =  ${x.maNganh} and ROUND(tongDiem,2)= ${x.diemChuan} `.then(c => c[0]['gioi_han_nguyen_vong'])
+              })))
     })
+    // return await this.prisma.diem_chuan.findMany({
+    //   where: {
+    //     maDotTuyenSinh: maDotTuyenSinh
+    //   }
+    // }).then((r) => {
+    //   console.log('r :>> ', r);
+    //   if (r.length > 0 && !r.some(e => e.diemChuan == null || e.diemChuan == undefined || e.diemChuan == '{}'))
+    //     return r;
+    //   else {
+
+    //     return this.prisma.$queryRaw<any[]>`select tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh, min(tongDiem) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong
+    //     on danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and danh_sach_nguyen_vong.nguyenVong = danh_sach_trung_tuyen.nguyenVongTrungTuyen
+    //     and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh
+    //     inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh
+    //     inner join dot_tuyen_sinh on dot_tuyen_sinh.maDotTuyenSinh = danh_sach_trung_tuyen.maDotTuyenSinh
+    //     inner join khoa_tuyen_sinh as kts on danh_sach_trung_tuyen.maKhoaTuyenSinh = kts.maKhoa
+    //     where  dot_tuyen_sinh.maDotTuyenSinh = ${maDotTuyenSinh}
+    //     group by tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh`
+    //   }
+    // }).catch((e) => {
+    //   return this.prisma.$queryRaw<any[]>`select tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh, min(tongDiem) as diemChuan from danh_sach_trung_tuyen inner join danh_sach_nguyen_vong
+    //   on danh_sach_trung_tuyen.soBaoDanh = danh_sach_nguyen_vong.soBaoDanh and danh_sach_nguyen_vong.nguyenVong = danh_sach_trung_tuyen.nguyenVongTrungTuyen
+    //   and danh_sach_trung_tuyen.maDotTuyenSinh = danh_sach_nguyen_vong.maDotTuyenSinh
+    //   inner join nganh on danh_sach_nguyen_vong.maNganh = nganh.maNganh
+    //   inner join dot_tuyen_sinh on dot_tuyen_sinh.maDotTuyenSinh = danh_sach_trung_tuyen.maDotTuyenSinh
+    //   inner join khoa_tuyen_sinh as kts on danh_sach_trung_tuyen.maKhoaTuyenSinh = kts.maKhoa
+    //   where  dot_tuyen_sinh.maDotTuyenSinh = ${maDotTuyenSinh}
+    //   group by tenKhoa, tenDotTuyenSinh, nganh.maNganh, tenNganh`
+    // })
   }
   async re_filter_danh_sach_trung_tuyen(maDotTuyenSinh: number, maKhoaTuyenSinh: number, danh_sach_diem_chuan: any[]) {
     await this.prisma.$executeRaw`delete from danh_sach_trung_tuyen where maDotTuyenSinh = ${maDotTuyenSinh}`
@@ -365,20 +380,20 @@ export class DotTuyenSinhService {
                 return this.locDSTrungTuyen(id, await this.wl_service.groupBy(res.valid, 'combinedKey'));
 
               }).catch(e => {
-                console.log('e :>> ', e);
+                // console.log('e :>> ', e);
                 return { error: 'Error while saving file' };
               })
             });
           }
           catch (e) {
-            console.log('e :>> ', e);
+            // console.log('e :>> ', e);
             return e
           }
         }
       })
 
     } catch (e) {
-      console.log('e :>> ', e);
+      // console.log('e :>> ', e);
       return {
         error: 'Error while parsing file',
       };
@@ -467,8 +482,8 @@ export class DotTuyenSinhService {
           // và xét xem nguyện vọng trước đó có xac nhận nhập học chưa
           if (r && r.maDotTuyenSinh <= maDotTuyenSinh && item.nguyenVong < r.nguyenVongTrungTuyen) { // đợt đã đậu xảy ra trước và nguyện vọng của đợt này nhỏ hơn đợt đã đậu
             // Nếu đúng, ta sẽ chuyển nguỵen vọng này vào danh sách trúng tuyển thay cho nguyện vọng cũ
-          console.log('nguyện vọng đợt này là :>> ', item.nguyenVong);
-            console.log('trùng thí sinh: thí sinh đã đậu 1 đợt trong khoá, và sẽ bị thay thế  :>> ', r);
+          // console.log('nguyện vọng đợt này là :>> ', item.nguyenVong);
+            // console.log('trùng thí sinh: thí sinh đã đậu 1 đợt trong khoá, và sẽ bị thay thế  :>> ', r);
             try {
               this.prisma.danh_sach_trung_tuyen.update({
                 where: {
@@ -489,8 +504,8 @@ export class DotTuyenSinhService {
 
           }
           else {
-            console.log('data e :>> ', e);
-            console.log('error item :>> ', item);
+            // console.log('data e :>> ', e);
+            // console.log('error item :>> ', item);
 
             switch (e.code) {
               case 'P2002':
@@ -674,17 +689,17 @@ export class DotTuyenSinhService {
     });
     return this.getDieuKienLoc(maDotTuyenSinh).then((data) => {
       const dstt = this.wl_service.huyenKute(groupByCombinedKey, data.chiTieuNganh, data.ds_dieukien, data.mota_dieukien)
-      let count = {};
-      let count2 = {};
-      Object.values(dstt).flat().forEach((item: any) => {
-        count[item.soBaoDanh] = (count[item.soBaoDanh] || 0) + 1;
-        if (count[item.soBaoDanh] > 1) {
-          count2[item.soBaoDanh] = count[item.soBaoDanh];
-        }
-      });
+      // let count = {};
+      // let count2 = {};
+      // Object.values(dstt).flat().forEach((item: any) => {
+      //   count[item.soBaoDanh] = (count[item.soBaoDanh] || 0) + 1;
+      //   if (count[item.soBaoDanh] > 1) {
+      //     count2[item.soBaoDanh] = count[item.soBaoDanh];
+      //   }
+      // });
       // console.log('count :>> ', count);
 
-      console.log('count2 - count trung tt :>> ', count2);
+      // console.log('count2 - count trung tt :>> ', count2);
       return this.prisma.$executeRaw`DELETE FROM danh_sach_trung_tuyen WHERE maDotTuyenSinh = ${maDotTuyenSinh}`
         .then(() => {
           return this.createManyDSTT(maDotTuyenSinh, Object.values(dstt).flat(), khoa)

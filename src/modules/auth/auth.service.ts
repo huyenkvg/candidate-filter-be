@@ -12,13 +12,13 @@ export class AuthService {
   ) {}
 
   async validateUser(username, pass) {
-    console.log('username :>> ', username);
+    // console.log('username :>> ', username);
     const user = await this.usersService.findUserByCredentials(username, pass);
     return user;
   }
 
   async login(user: User) {
-    console.log('user :>> ', user);
+    // console.log('user :>> ', user);
     const payload = {
       username: user.username,
       sub: user.id,
