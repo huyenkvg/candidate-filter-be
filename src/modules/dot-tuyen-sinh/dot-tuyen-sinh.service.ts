@@ -288,7 +288,7 @@ export class DotTuyenSinhService {
           const nv_da_nhap_hoc = res.find((item) => {
             // console.log('item :>> ', item);
             // return (item.maDotTuyenSinh < maDotTuyenSinh &&    item.soBaoDanh == curr.soBaoDanh && item.nguyenVongTrungTuyen <= curr.nguyenVong || item.soBaoDanh == curr.cmnd && item.nguyenVongTrungTuyen <= curr.nguyenVong);
-            return (item.lock && item.soBaoDanh == curr.soBaoDanh || item.soBaoDanh == curr.cmnd || (item.cmnd || 'NULL-CMND') == curr.cmnd);
+            return (item.maDotTuyenSinh < maDotTuyenSinh && item.lock && item.soBaoDanh == curr.soBaoDanh || item.soBaoDanh == curr['cmnd'] || (item.cmnd || 'NULL-CMND') == curr['cmnd']);
 
 
           });
@@ -454,16 +454,17 @@ export class DotTuyenSinhService {
 
     return Promise.all(data.map(async (item) => {
       try {
-        await this.prisma.danh_sach_trung_tuyen.create({
-          data: {
-            maDotTuyenSinh: maDotTuyenSinh,
-            soBaoDanh: '' + item.soBaoDanh,
-            nguyenVongTrungTuyen: item.nguyenVong,
-            maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
-          }
-        })
+        await this.prisma.$executeRaw`INSERT INTO danh_sach_trung_tuyen (maDotTuyenSinh, soBaoDanh, nguyenVongTrungTuyen, maKhoaTuyenSinh) VALUES (${maDotTuyenSinh}, ${item.soBaoDanh}, ${item.nguyenVong}, ${khoa.maKhoaTuyenSinh})`
+        // await this.prisma.danh_sach_trung_tuyen.create({
+        //   data: {
+        //     maDotTuyenSinh: maDotTuyenSinh,
+        //     soBaoDanh: '' + item.soBaoDanh,
+        //     nguyenVongTrungTuyen: item.nguyenVong,
+        //     maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
+        //   }
+        // })
       } catch (e) {
-        // console.log('data e :>> ', e);
+        console.log('data e :>> ', e);
         // Lỗi trùng  sẽ nhảy vào đây
         // Trùng Thí sinh ở 1 khoá thì ta sẽ xem xét nguyện vọng
         await this.prisma.danh_sach_trung_tuyen.findFirst({
@@ -472,7 +473,7 @@ export class DotTuyenSinhService {
             soBaoDanh: '' + item.soBaoDanh,
           },
           include: {
-            danh_sach_nguyen_vong: true
+            danh_sach_nguyen_vong: true,
           }
         }).then(r => {
           // console.log('r: :>> ', r:);
@@ -595,9 +596,9 @@ export class DotTuyenSinhService {
           data: data.map((item) => {
             return {
               maDotTuyenSinh: maDotTuyenSinh,
-              maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
-              soBaoDanh: '' + item.soBaoDanh ? item.soBaoDanh : item.cmnd,
-              cmnd: '' + item.cmnd,
+              // maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
+              soBaoDanh: '' + item.soBaoDanh ? item.soBaoDanh : item['cmnd'],
+              // cmnd: '' + item.cmnd,
               maNganh: '' + item.maNganh,
               dieuKienKhac: null,
               maToHopXetTuyen: '' + item.maToHopXetTuyen,
@@ -629,9 +630,9 @@ export class DotTuyenSinhService {
         data: data.map((item) => {
           return {
             maDotTuyenSinh: id,
-            maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
-            soBaoDanh: '' + item.soBaoDanh ? item.soBaoDanh : item.cmnd,
-            cmnd: '' + item.cmnd,
+            // maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
+            soBaoDanh: '' + item.soBaoDanh ? item.soBaoDanh : item['cmnd'],
+            // cmnd: '' + item.cmnd,
             maNganh: '' + item.maNganh,
             dieuKienKhac: item.dieuKienKhac,
             // maToHopXetTuyen: '' + item.maToHopXetTuyen,
@@ -646,7 +647,7 @@ export class DotTuyenSinhService {
           return {
             maDotTuyenSinh: id,
             maKhoaTuyenSinh: khoa.maKhoaTuyenSinh,
-            soBaoDanh: '' + item.soBaoDanh ? item.soBaoDanh : item.cmnd,
+            soBaoDanh: '' + item.soBaoDanh ? item.soBaoDanh : item['cmnd'],
             nguyenVongTrungTuyen: Number.parseInt(item.nguyenVong),
           };
         })
@@ -689,17 +690,17 @@ export class DotTuyenSinhService {
     });
     return this.getDieuKienLoc(maDotTuyenSinh).then((data) => {
       const dstt = this.wl_service.huyenKute(groupByCombinedKey, data.chiTieuNganh, data.ds_dieukien, data.mota_dieukien)
-      // let count = {};
-      // let count2 = {};
-      // Object.values(dstt).flat().forEach((item: any) => {
-      //   count[item.soBaoDanh] = (count[item.soBaoDanh] || 0) + 1;
-      //   if (count[item.soBaoDanh] > 1) {
-      //     count2[item.soBaoDanh] = count[item.soBaoDanh];
-      //   }
-      // });
+      let count = {};
+      let count2 = {};
+      Object.values(dstt).flat().forEach((item: any) => {
+        count[item.soBaoDanh] = (count[item.soBaoDanh] || 0) + 1;
+        if (count[item.soBaoDanh] > 1) {
+          count2[item.soBaoDanh] = count[item.soBaoDanh];
+        }
+      });
       // console.log('count :>> ', count);
-
-      // console.log('count2 - count trung tt :>> ', count2);
+      // count 2 là những người trùng
+      console.log('count2 - count trung tt :>> ', count2);
       return this.prisma.$executeRaw`DELETE FROM danh_sach_trung_tuyen WHERE maDotTuyenSinh = ${maDotTuyenSinh}`
         .then(() => {
           return this.createManyDSTT(maDotTuyenSinh, Object.values(dstt).flat(), khoa)

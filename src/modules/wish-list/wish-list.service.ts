@@ -45,7 +45,24 @@ export class WishListService {
     if (a['soBaoDanh'] == b['soBaoDanh']) {
       return (Number.parseInt(a['nguyenVong']) - Number.parseInt(b['nguyenVong']));
     }
-
+    // cùng ngành nhưng khác số báo danh
+    // if (a['maNganh'] == b['maNganh'] && a['soBaoDanh'] != b['soBaoDanh']) {
+    //   if (a_arr.some(item => Number.parseFloat(item['tongDiem']) > Number.parseFloat(b['tongDiem']))) {
+    //     return -1;
+    //   }
+    //   else if (b_arr.some(item => Number.parseFloat(item['tongDiem']) > Number.parseFloat(a['tongDiem']))) {
+    //     return 1;
+    //   }
+    //   else if (a_arr.some(item => Number.parseInt(item['nguyenVong']) < Number.parseInt(b['nguyenVong']))) {
+    //     return -1;
+    //   }
+    //   else if (b_arr.some(item => Number.parseInt(item['nguyenVong']) < Number.parseInt(a['nguyenVong']))) {
+    //     return 1;
+    //   }
+    //   else {
+    //     return 0;
+    //   }
+    // }
 
     // truong hop comindedKey khac nhau hoan toan
     let result = 0;
@@ -64,15 +81,28 @@ export class WishListService {
     }
     return result;
   }
+  // kiemTraSlotCuoiCungCaoHon(danh_sach_trung_tuyen, wish) {
+  //   let len = danh_sach_trung_tuyen[wish.maNganh]?.length || 0;
+  //   if (!danh_sach_trung_tuyen[wish.maNganh] || len <= 0) return false;
+  //   const last_wish = danh_sach_trung_tuyen[wish.maNganh][len - 1];
+  //   if (wish['soBaoDanh'] == '02020752') {
+  //     console.log('wish :>> ', wish);
+  //     console.log('last_wish :>> ', last_wish);
+  //   }
+
+  //   return Number.parseFloat(wish['tongDiem']) * 1000 == Number.parseFloat(last_wish['tongDiem']) * 1000;
+
+  // }
   kiemTraSlotCuoiCung(danh_sach_trung_tuyen, wish) {
 
     let len = danh_sach_trung_tuyen[wish.maNganh]?.length || 0;
     if (!danh_sach_trung_tuyen[wish.maNganh] || len <= 0) return false;
     const last_wish = danh_sach_trung_tuyen[wish.maNganh][len - 1];
-    if (wish['soBaoDanh'] == '02007406') {
+    if (wish['soBaoDanh'] == '02020752') {
       console.log('wish :>> ', wish);
       console.log('last_wish :>> ', last_wish);
     }
+
     return Number.parseFloat(wish['tongDiem']) * 1000 == Number.parseFloat(last_wish['tongDiem']) * 1000 && Number.parseInt(wish['nguyenVong']) == Number.parseInt(last_wish['nguyenVong']);
 
   }
@@ -144,7 +174,7 @@ export class WishListService {
           // if(dsTrungTuyen[wish.soBaoDanh] == "IS_SELECTED")  
           //   break;
           // check nếu còn slot ngành này, === người ngày ở NV này đã trúng tuyển
-          if (wish['soBaoDanh'] == '02007406') {
+          if (wish['soBaoDanh'] == '02020752') {
             console.log('wNOOOO ahhhhhh :>> ', wish);
             console.log('chiTieuNganh[wish.maNganh]:>> ', chiTieuNganh[wish.maNganh]);
             console.log('dsTrungTuyenTamThoi[wish.maNganh]:>> ', dsTrungTuyenTamThoi[wish.maNganh].length);
@@ -152,9 +182,16 @@ export class WishListService {
             console.log('ok ---- :>> ', (chiTieuNganh[wish.maNganh] > dsTrungTuyenTamThoi[wish.maNganh].length && this.kiemTraChiTieu(chiTieuNganh, wish)));
           }
           if (dsTrungTuyenTamThoi[wish.maNganh] && (chiTieuNganh[wish.maNganh] > dsTrungTuyenTamThoi[wish.maNganh].length || this.kiemTraSlotCuoiCung(dsTrungTuyenTamThoi, wish)) && this.kiemTraChiTieu(chiTieuNganh, wish)) { // còn slot
-            if (wish['soBaoDanh'] == '02007406') {
+            if (wish['soBaoDanh'] == '02020752') {
               console.log('wish ahhhhhh :>> ', 'okkkayyyyy');
             }
+            // Thí sinh này trúng tuyển ngành này nhưng chưa chắc nó đã xếp đúng nguyện vọng trúng tuyển
+            
+            // candidateWishList.array.forEach(element => {
+            //   if(Number.parseFloat(element['tongDiem'])*1000 -  Number.parseFloat(wish['tongDiem'])*1000 > 0) {
+            //     wish = element;
+            //   }
+            // });
             // if (this.kiemTraChiTieu(chiTieuNganh, wish) == "True-2") {
             //   chiTieuNganh[wish.maNganh + '-chitieutohop'] -= 1;
             // }
@@ -213,7 +250,17 @@ export class WishListService {
     // }
 
     // console.log('dsTrungTuyen :>> ', dsTrungTuyen);
-    return dsTrungTuyenTamThoi;
+    var result = {...dsTrungTuyenTamThoi};
+    // for (let key in result) {
+    //   const item = dsTrungTuyenTamThoi[key];
+    //   result[key] = dsTrungTuyenTamThoi[key].map((candidate) => {
+    //     if(Number.parseFloat(candidate['tongDiem'])*1000 - Number.parseFloat(item[item.length - 1]['tongDiem'])*1000 < 0) {
+    //       return Object.values(wishListOfAll).find((x) => x['combinedKey'] == candidate['combinedKey'] && x['tongDiem'] >= item[item.length - 1]['tongDiem']);
+    //     }
+    //      return candidate;
+    //    });
+    // }
+    return result;
   }
 
   receiveFile(file) {
@@ -261,13 +308,13 @@ export class WishListService {
     try {
       const diem = Number.parseFloat(diem_chuan_nganh[wish['maToHopXetTuyen']]);
       const gioi_han = (diem_chuan_nganh['gioi_han_nguyen_vong'] == 'INF' || !diem_chuan_nganh['gioi_han_nguyen_vong']) ? 1000000 : Number.parseInt(diem_chuan_nganh['gioi_han_nguyen_vong'])
-      return ((wish.tongDiem * 1000 - diem * 1000) > 0 || ((wish.tongDiem * 1000 - diem * 1000) == 0 && wish.nguyenVong <= gioi_han));
+      return ((Number.parseFloat(wish.tongDiem) * 1000 - diem * 1000) > 0 || (Math.abs(Number.parseFloat(wish.tongDiem) * 1000 - diem * 1000) <= 0.001 && Number.parseInt(wish.nguyenVong) <= gioi_han));
 
     }
     catch (e) {
       console.log('e :>> ', e);
       const diem = Number.parseFloat(diem_chuan_nganh)
-      return (wish.tongDiem >= diem);
+      return (Number.parseFloat(wish.tongDiem) - diem >= 0);
     }
     return false;
 
@@ -295,7 +342,7 @@ export class WishListService {
     //   "nguyenVong": "asc"
     // } 
     // let sortedCandidates = listWishValues.sort(function compare(a: any, b: any) { return 1.0 * (b.tongDiem - a.tongDiem) });
-    let sortedCandidates = listWishValues//.sort((aArray, bArray) => this.compareByDieuKien(aArray, bArray, ds_dieukien, mota_dieukien));
+    let sortedCandidates = listWishValues.sort((aArray, bArray) => this.compareByDieuKien(aArray, bArray, ds_dieukien, mota_dieukien));
     let time = 0;
     // return wishListOfAll;
     // return sortedCandidates;

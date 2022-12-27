@@ -165,7 +165,9 @@ export class KhoaTuyenSinhService {
           }),
           count_nguyen_vong: await this.prisma.danh_sach_nguyen_vong.count({
             where: {
-              maKhoaTuyenSinh: item.maKhoa,
+              dot_tuyen_sinh: {
+                maKhoaTuyenSinh: item.maKhoa,
+              }
             },
           }),
           count_trung_tuyen: await this.prisma.danh_sach_trung_tuyen.count({
@@ -214,7 +216,9 @@ export class KhoaTuyenSinhService {
         ...await this.prisma.$queryRaw`select count(distinct maNganh) as count_nganh from khoa_tuyen_sinh as kts inner join dot_tuyen_sinh as dts on dts.maKhoaTuyenSinh = kts.maKhoa inner join chi_tieu_tuyen_sinh as ctts on ctts.maDotTuyenSinh = dts.maDotTuyenSinh where kts.maKhoa = ${item.maKhoa}`.then((res) => {return res[0]}),
         count_nguyen_vong: await this.prisma.danh_sach_nguyen_vong.count({
           where: {
-            maKhoaTuyenSinh: item.maKhoa,
+            dot_tuyen_sinh: {
+              maKhoaTuyenSinh: item.maKhoa,
+            }
           },
         }),
         count_nhap_hoc: await this.prisma.danh_sach_trung_tuyen.count({
